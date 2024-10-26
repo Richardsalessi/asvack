@@ -1,29 +1,37 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 
+// Página principal
 Route::get('/', function () {
-    return view('welcome');
+    $productos = Producto::all(); // Obtén todos los productos
+    return view('welcome', compact('productos'));
+})->name('home');
+
+// Redirección al home después de iniciar sesión
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', function () {
+        // Redirigir a la página principal
+        return redirect()->route('home');
+    })->name('dashboard');
+
+    // Rutas para cada dashboard con permisos específicos
+    Route::get('/admin/dashboard', function () {
+        return view('admin.dashboard');
+    })->middleware('can:admin-access')->name('admin.dashboard');
+
+    Route::get('/provider/dashboard', function () {
+        return view('provider.dashboard');
+    })->middleware('can:provider-access')->name('provider.dashboard');
+
+    Route::get('/client/dashboard', function () {
+        return view('client.dashboard');
+    })->middleware('can:client-access')->name('client.dashboard');
 });
 
-// Redirección dinámica según el rol del usuario
-Route::get('/dashboard', function () {
-    $user = auth()->user();
-
-    if ($user->hasRole('admin')) {
-        return view('admin.dashboard');
-    } elseif ($user->hasRole('provider')) {
-        return view('provider.dashboard');
-    } elseif ($user->hasRole('client')) {
-        return view('client.dashboard');
-    }
-
-    // Redirigir a la página principal si no hay un rol asignado
-    return redirect('/');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-// Rutas protegidas por autenticación
+// Rutas protegidas por autenticación para la edición del perfil del usuario
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -31,4 +39,3 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
-    

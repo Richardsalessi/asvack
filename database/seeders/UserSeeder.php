@@ -3,72 +3,42 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use App\Models\User;
-
-class DatabaseSeeder extends Seeder
-{
-    /**
-     * Seed the application's database.
-     */
-    public function run(): void
-    {
-        // Primero crear los roles y permisos
-        $this->call(RolesAndPermissionsSeeder::class);
-        
-        // Luego crear los usuarios con los roles ya existentes
-        $this->call(UserSeeder::class);
-    }
-}
-
-class RolesAndPermissionsSeeder extends Seeder
-{
-    public function run(): void
-    {
-        // Crear permisos
-        $adminAccess = Permission::firstOrCreate(['name' => 'admin-access']);
-        $providerAccess = Permission::firstOrCreate(['name' => 'provider-access']);
-        $clientAccess = Permission::firstOrCreate(['name' => 'client-access']);
-
-        // Crear roles si no existen
-        $adminRole = Role::firstOrCreate(['name' => 'admin']);
-        $providerRole = Role::firstOrCreate(['name' => 'provider']);
-        $clientRole = Role::firstOrCreate(['name' => 'client']);
-
-        // Asignar permisos a roles
-        $adminRole->givePermissionTo($adminAccess);
-        $providerRole->givePermissionTo($providerAccess);
-        $clientRole->givePermissionTo($clientAccess);
-    }
-}
+use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
     public function run()
     {
-        // Crear usuario admin
-        $admin = User::create([
-            'name' => 'Richards',
-            'email' => 'richards@gmail.com',
-            'password' => bcrypt('proyecto2024'),
-        ]);
+        // Verificar si el usuario admin ya existe
+        $admin = User::firstOrCreate(
+            ['email' => 'richards@gmail.com'],
+            [
+                'name' => 'Richards',
+                'password' => bcrypt('proyecto2024'),
+            ]
+        );
         $admin->assignRole('admin');
 
-        // Crear usuario proveedor
-        $provider = User::create([
-            'name' => 'Valentina',
-            'email' => 'valentina@gmail.com',
-            'password' => bcrypt('proyecto2024'),
-        ]);
+        // Verificar si el usuario proveedor ya existe
+        $provider = User::firstOrCreate(
+            ['email' => 'valentina@gmail.com'],
+            [
+                'name' => 'Valentina',
+                'password' => bcrypt('proyecto2024'),
+            ]
+        );
         $provider->assignRole('provider');
 
-        // Crear usuario cliente
-        $client = User::create([
-            'name' => 'Cristian',
-            'email' => 'cristian@gmail.com',
-            'password' => bcrypt('proyecto2024'),
-        ]);
+        // Verificar si el usuario cliente ya existe
+        $client = User::firstOrCreate(
+            ['email' => 'cristian@gmail.com'],
+            [
+                'name' => 'Cristian',
+                'password' => bcrypt('proyecto2024'),
+            ]
+        );
         $client->assignRole('client');
     }
 }
+    

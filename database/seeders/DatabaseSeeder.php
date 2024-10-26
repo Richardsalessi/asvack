@@ -16,5 +16,8 @@ class DatabaseSeeder extends Seeder
         
         // Luego crear los usuarios con los roles ya existentes
         $this->call(UserSeeder::class);
+
+        // Finalmente crear los productos
+        $this->call(ProductoSeeder::class);
     }
 }

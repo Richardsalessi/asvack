@@ -169,15 +169,15 @@
             document.body.classList.add('loaded');
         });
 
-        // Mostrar u ocultar el botón de "ir arriba"
-        window.onscroll = function() {
+        // Mostrar u ocultar el botón de "ir arriba" de inmediato según el desplazamiento
+        window.addEventListener('scroll', function() {
             const scrollToTopBtn = document.getElementById('scrollToTopBtn');
-            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+            if (window.scrollY > 100) {
                 scrollToTopBtn.classList.add('show');
             } else {
                 scrollToTopBtn.classList.remove('show');
             }
-        };
+        });
 
         // Función para desplazar hacia arriba suavemente
         function scrollToTop() {

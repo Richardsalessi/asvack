@@ -13,7 +13,17 @@ class Producto extends Model
         'nombre',
         'descripcion',
         'precio',
-        'categoria',
-        'imagen',
+        'categoria_id',
     ];
+
+    public function categoria()
+    {
+        return $this->belongsTo(Categoria::class);
+    }
+
+    // Relación con el modelo Imagen: un producto tiene muchas imágenes
+    public function imagenes()
+    {
+        return $this->hasMany(Imagen::class);
+    }
 }

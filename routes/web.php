@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProductoController; // Importar el controlador de productos
+use App\Http\Controllers\CategoriaController; // Importar el controlador de categorías
 use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 
@@ -38,4 +40,31 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// CRUD de categorías, protegido por autenticación y permiso de administrador
+Route::resource('admin/categorias', CategoriaController::class)
+    ->middleware(['auth', 'can:admin-access'])
+    ->names([
+        'index' => 'admin.categorias.index',
+        'create' => 'admin.categorias.create',
+        'store' => 'admin.categorias.store',
+        'show' => 'admin.categorias.show',
+        'edit' => 'admin.categorias.edit',
+        'update' => 'admin.categorias.update',
+        'destroy' => 'admin.categorias.destroy',
+    ]);
+
+// CRUD de productos, protegido por autenticación y permiso de administrador
+Route::resource('admin/productos', ProductoController::class)
+    ->middleware(['auth', 'can:admin-access'])
+    ->names([
+        'index' => 'admin.productos.index',
+        'create' => 'admin.productos.create',
+        'store' => 'admin.productos.store',
+        'show' => 'admin.productos.show',
+        'edit' => 'admin.productos.edit',
+        'update' => 'admin.productos.update',
+        'destroy' => 'admin.productos.destroy',
+    ]);
+
+// Autenticación
 require __DIR__.'/auth.php';

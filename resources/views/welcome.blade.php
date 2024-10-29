@@ -11,7 +11,7 @@
     <!-- Video como banner extendido al ancho total -->
     <div class="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] mb-8">
         <video autoplay loop muted class="w-full object-cover h-[500px] rounded-md shadow-lg">
-            <source src="{{ asset('storage/Video.mp4') }}" type="video/mp4">
+            <source src="{{ asset('videos/Video.mp4') }}" type="video/mp4">
             Tu navegador no soporta la reproducción de videos.
         </video>
     </div>
@@ -24,7 +24,7 @@
                     @if($producto->imagenes->isNotEmpty())
                         <div class="slider relative h-full w-full">
                             @foreach($producto->imagenes as $imagen)
-                                <img src="{{ asset('storage/' . $imagen->ruta) }}" alt="Imagen de {{ $producto->nombre }}" class="slider-image object-contain w-full h-full absolute top-0 left-0 opacity-0 transition-opacity duration-1000 cursor-pointer {{ $loop->first ? 'opacity-100' : '' }}" onclick="openModal(this)">
+                                <img src="data:image/png;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="slider-image object-contain w-full h-full absolute top-0 left-0 opacity-0 transition-opacity duration-1000 cursor-pointer {{ $loop->first ? 'opacity-100' : '' }}" onclick="openModal(this)">
                             @endforeach
                             @if($producto->imagenes->count() > 1)
                                 <button class="prev-button absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">&#8249;</button>

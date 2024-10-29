@@ -22,8 +22,8 @@
                     <td class="px-6 py-4 flex gap-2 items-center">
                         @if ($producto->imagenes->isNotEmpty())
                             @foreach ($producto->imagenes as $imagen)
-                                <a href="#" class="open-modal" data-image-url="{{ asset('storage/' . $imagen->ruta) }}">
-                                    <img src="{{ asset('storage/' . $imagen->ruta) }}" alt="Imagen de {{ $producto->nombre }}" class="h-20 w-20 object-cover rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+                                <a href="#" class="open-modal" data-image-url="data:image/jpeg;base64,{{ $imagen->contenido }}">
+                                    <img src="data:image/jpeg;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="h-20 w-20 object-cover rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
                                 </a>
                             @endforeach
                         @else

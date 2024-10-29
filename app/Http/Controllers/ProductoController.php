@@ -6,7 +6,6 @@ use App\Models\Producto;
 use App\Models\Imagen;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends Controller
 {
@@ -41,8 +40,13 @@ class ProductoController extends Controller
 
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
-                $path = $imagen->store('imagenes', 'public');
-                $producto->imagenes()->create(['ruta' => $path]);
+                $path = $imagen->getClientOriginalName();
+                $contenido = base64_encode(file_get_contents($imagen->getRealPath()));
+
+                $producto->imagenes()->create([
+                    'ruta' => $path,
+                    'contenido' => $contenido
+                ]);
             }
         }
 
@@ -78,7 +82,6 @@ class ProductoController extends Controller
             foreach ($request->eliminar_imagenes as $imagenId) {
                 $imagen = Imagen::find($imagenId);
                 if ($imagen && $imagen->producto_id == $producto->id) {
-                    Storage::disk('public')->delete($imagen->ruta);
                     $imagen->delete();
                 }
             }
@@ -87,8 +90,13 @@ class ProductoController extends Controller
         // Añadir nuevas imágenes
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
-                $path = $imagen->store('imagenes', 'public');
-                $producto->imagenes()->create(['ruta' => $path]);
+                $path = $imagen->getClientOriginalName();
+                $contenido = base64_encode(file_get_contents($imagen->getRealPath()));
+
+                $producto->imagenes()->create([
+                    'ruta' => $path,
+                    'contenido' => $contenido
+                ]);
             }
         }
 
@@ -98,7 +106,6 @@ class ProductoController extends Controller
     public function destroy(Producto $producto)
     {
         foreach ($producto->imagenes as $imagen) {
-            Storage::disk('public')->delete($imagen->ruta);
             $imagen->delete();
         }
 

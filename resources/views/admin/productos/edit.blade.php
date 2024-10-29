@@ -38,11 +38,11 @@
             <div class="flex flex-wrap gap-4 items-center" id="imagenes-container">
                 <!-- Imágenes existentes -->
                 @foreach($producto->imagenes as $imagen)
-                    <div class="relative w-32 h-32 border rounded-lg dark:bg-gray-700 dark:border-gray-600 overflow-hidden flex flex-col justify-between items-center p-1" data-imagen-id="{{ $imagen->id }}">
-                        <a href="#" class="open-modal cursor-pointer" data-image-url="{{ asset('storage/' . $imagen->ruta) }}">
-                            <img src="{{ asset('storage/' . $imagen->ruta) }}" alt="Imagen del producto" class="object-cover w-full h-20 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+                    <div class="relative w-32 h-40 border rounded-lg dark:bg-gray-700 dark:border-gray-600 overflow-hidden flex flex-col justify-between items-center p-1" data-imagen-id="{{ $imagen->id }}">
+                        <a href="#" class="open-modal cursor-pointer" data-image-url="data:image/jpeg;base64,{{ $imagen->contenido }}">
+                            <img src="data:image/jpeg;base64,{{ $imagen->contenido }}" alt="Imagen del producto" class="object-contain w-full h-24 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
                         </a>
-                        <span class="text-xs text-center text-gray-600 dark:text-gray-300 mt-1">{{ basename($imagen->ruta) }}</span>
+                        <span class="text-xs text-center text-gray-600 dark:text-gray-300 mt-0">{{ basename($imagen->ruta) }}</span>
                         <button type="button" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center eliminar-imagen hover:bg-red-800 transition-all duration-300 shadow-lg">
                             &times;
                         </button>
@@ -129,21 +129,23 @@
             });
         });
 
-        // Previsualizar nuevas imágenes seleccionadas y añadirlas al contenedor de imágenes existentes
-        document.getElementById('imagenes').addEventListener('change', function () {
-            const previewContainer = document.getElementById('preview-imagenes');
-            previewContainer.innerHTML = ""; // Limpiar las vistas previas anteriores
+        // Previsualizar nuevas imágenes seleccionadas y mantener las anteriores
+        const imagenesInput = document.getElementById('imagenes');
+        const previewContainer = document.getElementById('preview-imagenes');
+        let dataTransfer = new DataTransfer();
 
-            Array.from(this.files).forEach((file, index) => {
+        imagenesInput.addEventListener('change', function () {
+            Array.from(this.files).forEach((file) => {
+                dataTransfer.items.add(file);
                 const reader = new FileReader();
 
                 reader.onload = function (e) {
                     const imagenDiv = document.createElement('div');
-                    imagenDiv.classList.add('relative', 'w-32', 'h-32', 'border', 'rounded-lg', 'dark:bg-gray-700', 'dark:border-gray-600', 'overflow-hidden', 'flex', 'flex-col', 'justify-between', 'items-center', 'p-1');
+                    imagenDiv.classList.add('relative', 'w-32', 'h-40', 'border', 'rounded-lg', 'dark:bg-gray-700', 'dark:border-gray-600', 'overflow-hidden', 'flex', 'flex-col', 'justify-between', 'items-center', 'p-1');
 
                     const img = document.createElement('img');
                     img.src = e.target.result;
-                    img.classList.add('object-cover', 'w-full', 'h-20', 'rounded-lg', 'shadow-md', 'hover:shadow-lg', 'transition-all', 'duration-300', 'cursor-pointer');
+                    img.classList.add('object-contain', 'w-full', 'h-24', 'rounded-lg', 'shadow-md', 'hover:shadow-lg', 'transition-all', 'duration-300', 'cursor-pointer');
                     img.addEventListener('click', function () {
                         modalImage.src = e.target.result;
                         modal.classList.remove('hidden');
@@ -151,7 +153,7 @@
                     });
 
                     const fileName = document.createElement('span');
-                    fileName.classList.add('text-xs', 'text-center', 'text-gray-600', 'dark:text-gray-300', 'mt-1');
+                    fileName.classList.add('text-xs', 'text-center', 'text-gray-600', 'dark:text-gray-300', 'mt-0'); // Eliminar el margen superior del texto
                     fileName.innerText = file.name;
 
                     const deleteButton = document.createElement('button');
@@ -160,13 +162,14 @@
                     deleteButton.innerHTML = '&times;';
                     deleteButton.addEventListener('click', function () {
                         imagenDiv.remove();
-                        const dataTransfer = new DataTransfer();
-                        Array.from(document.getElementById('imagenes').files).forEach((existingFile, existingIndex) => {
-                            if (existingIndex !== index) {
-                                dataTransfer.items.add(existingFile);
+                        const updatedDataTransfer = new DataTransfer();
+                        Array.from(dataTransfer.files).forEach((existingFile) => {
+                            if (existingFile !== file) {
+                                updatedDataTransfer.items.add(existingFile);
                             }
                         });
-                        document.getElementById('imagenes').files = dataTransfer.files;
+                        dataTransfer = updatedDataTransfer;
+                        imagenesInput.files = dataTransfer.files;
                     });
 
                     imagenDiv.appendChild(img);
@@ -177,6 +180,8 @@
 
                 reader.readAsDataURL(file);
             });
+
+            imagenesInput.files = dataTransfer.files;
         });
 
         const precioInput = document.getElementById('precio');

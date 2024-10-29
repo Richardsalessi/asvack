@@ -5,13 +5,14 @@
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('home') }}">
-                        <!-- Logo para el modo claro -->
-                        <img x-show="!darkMode" src="{{ asset('storage/Logo official 01 black.png') }}" alt="Logo Claro" class="block h-16 w-auto">
+                <!-- Logo para el modo claro -->
+                <img x-show="!darkMode" src="{{ asset('images/Logo official 01 black.png') }}" alt="Logo Claro" class="block h-16 w-auto">
 
-                        <!-- Logo para el modo oscuro -->
-                        <img x-show="darkMode" src="{{ asset('storage/Logo official png white.png') }}" alt="Logo Oscuro" class="block h-16 w-auto">
+                <!-- Logo para el modo oscuro -->
+                <img x-show="darkMode" src="{{ asset('images/Logo official png white.png') }}" alt="Logo Oscuro" class="block h-16 w-auto">
                     </a>
                 </div>
+
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex items-center">

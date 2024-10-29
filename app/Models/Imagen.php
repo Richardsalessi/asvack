@@ -11,7 +11,7 @@ class Imagen extends Model
 
     protected $table = 'imagenes'; // Especificar el nombre correcto de la tabla
 
-    protected $fillable = ['producto_id', 'ruta'];
+    protected $fillable = ['producto_id', 'ruta', 'contenido'];
 
     public function producto()
     {

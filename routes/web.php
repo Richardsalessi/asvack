@@ -1,25 +1,24 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ProductoController; // Importar el controlador de productos
-use App\Http\Controllers\CategoriaController; // Importar el controlador de categorías
+use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\Provider\CotizacionController;
 use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 
 // Página principal
 Route::get('/', function () {
-    $productos = Producto::all(); // Obtén todos los productos
+    $productos = Producto::all();
     return view('welcome', compact('productos'));
 })->name('home');
 
 // Redirección al home después de iniciar sesión
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
-        // Redirigir a la página principal
         return redirect()->route('home');
     })->name('dashboard');
 
-    // Rutas para cada dashboard con permisos específicos
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
     })->middleware('can:admin-access')->name('admin.dashboard');
@@ -33,14 +32,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->middleware('can:client-access')->name('client.dashboard');
 });
 
-// Rutas protegidas por autenticación para la edición del perfil del usuario
+// Rutas protegidas para perfil del usuario
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// CRUD de categorías, protegido por autenticación y permiso de administrador
+// CRUD de categorías, protegido por permisos de administrador
 Route::resource('admin/categorias', CategoriaController::class)
     ->middleware(['auth', 'can:admin-access'])
     ->names([
@@ -53,7 +52,7 @@ Route::resource('admin/categorias', CategoriaController::class)
         'destroy' => 'admin.categorias.destroy',
     ]);
 
-// CRUD de productos, protegido por autenticación y permiso de administrador
+// CRUD de productos, protegido por permisos de administrador
 Route::resource('admin/productos', ProductoController::class)
     ->middleware(['auth', 'can:admin-access'])
     ->names([
@@ -65,6 +64,46 @@ Route::resource('admin/productos', ProductoController::class)
         'update' => 'admin.productos.update',
         'destroy' => 'admin.productos.destroy',
     ]);
+
+// CRUD de productos para proveedores
+Route::resource('provider/productos', ProductoController::class)
+    ->middleware(['auth', 'can:provider-access'])
+    ->names([
+        'index' => 'provider.productos.index',
+        'create' => 'provider.productos.create',
+        'store' => 'provider.productos.store',
+        'show' => 'provider.productos.show',
+        'edit' => 'provider.productos.edit',
+        'update' => 'provider.productos.update',
+        'destroy' => 'provider.productos.destroy',
+    ]);
+
+// CRUD de cotizaciones para proveedores
+Route::resource('provider/cotizaciones', CotizacionController::class)
+    ->middleware(['auth', 'can:provider-access'])
+    ->names([
+        'index' => 'provider.cotizaciones.index',
+        'create' => 'provider.cotizaciones.create',
+        'store' => 'provider.cotizaciones.store',
+        'show' => 'provider.cotizaciones.show',
+        'edit' => 'provider.cotizaciones.edit',
+        'update' => 'provider.cotizaciones.update',
+        'destroy' => 'provider.cotizaciones.destroy',
+    ]);
+
+// Ruta para responder cotizaciones (con AJAX)
+Route::post('provider/cotizaciones/{id}/responder', [CotizacionController::class, 'responder'])
+    ->middleware(['auth', 'can:provider-access'])
+    ->name('provider.cotizaciones.responder');
+
+// Rutas para actualizar el estado de las cotizaciones (con AJAX)
+Route::patch('provider/cotizaciones/{id}/en-proceso', [CotizacionController::class, 'marcarEnProceso'])
+    ->middleware(['auth', 'can:provider-access'])
+    ->name('provider.cotizaciones.en_proceso');
+
+Route::patch('provider/cotizaciones/{id}/finalizado', [CotizacionController::class, 'marcarFinalizado'])
+    ->middleware(['auth', 'can:provider-access'])
+    ->name('provider.cotizaciones.finalizado');
 
 // Autenticación
 require __DIR__.'/auth.php';

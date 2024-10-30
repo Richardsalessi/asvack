@@ -22,18 +22,18 @@
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
                 <div class="h-64 w-full mb-4 overflow-hidden relative">
                     @if($producto->imagenes->isNotEmpty())
-                        <div class="slider relative h-full w-full">
+                        <div class="slider relative h-full w-full" style="user-select: none;">
                             @foreach($producto->imagenes as $imagen)
                                 <img src="data:image/png;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="slider-image object-contain w-full h-full absolute top-0 left-0 opacity-0 transition-opacity duration-1000 cursor-pointer {{ $loop->first ? 'opacity-100' : '' }}" onclick="openModal(this)">
                             @endforeach
                             @if($producto->imagenes->count() > 1)
-                                <button class="prev-button absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">&#8249;</button>
-                                <button class="next-button absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">&#8250;</button>
+                                <button class="prev-button absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="user-select: none;">&#8249;</button>
+                                <button class="next-button absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="user-select: none;">&#8250;</button>
                             @endif
                         </div>
                     @else
                         <!-- En caso de que no haya imágenes disponibles -->
-                        <img src="{{ asset('storage/placeholder.png') }}" alt="Imagen de {{ $producto->nombre }}" class="object-contain w-full h-full">
+                        <img src="{{ asset('storage/placeholder.png') }}" alt="Imagen de {{ $producto->nombre }}" class="object-contain w-full h-full" style="user-select: none;">
                     @endif
                 </div>
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">{{ $producto->nombre }}</h2>
@@ -52,11 +52,11 @@
 
 <!-- Modal para mostrar la imagen ampliada -->
 <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50" style="display: none;">
-    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl mx-auto mt-20">
-        <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-30">&times;</button>
+    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl mx-auto mt-20" style="user-select: none;">
+        <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-30" style="user-select: none;">&times;</button>
         <img id="modalImage" src="" alt="Imagen ampliada del producto" class="w-full object-contain p-4 opacity-0 transition-opacity duration-1000 z-10">
-        <button id="modalPrev" class="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none;">&#8249;</button>
-        <button id="modalNext" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none;">&#8250;</button>
+        <button id="modalPrev" class="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none; user-select: none;">&#8249;</button>
+        <button id="modalNext" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none; user-select: none;">&#8250;</button>
     </div>
 </div>
 
@@ -79,7 +79,6 @@
             const nextButton = slider.querySelector('.next-button');
 
             if (images.length > 1) {
-                // Función para cambiar automáticamente las imágenes cada 3 segundos con animación de desvanecimiento
                 setInterval(() => {
                     images[currentIndex].classList.remove('opacity-100');
                     images[currentIndex].classList.add('opacity-0');
@@ -88,40 +87,36 @@
                     images[currentIndex].classList.add('opacity-100');
                 }, 3000);
 
-                // Evento para botón "Siguiente"
                 nextButton?.addEventListener('click', () => {
                     changeImage('next', images);
                 });
 
-                // Evento para botón "Anterior"
                 prevButton?.addEventListener('click', () => {
                     changeImage('prev', images);
                 });
             }
 
-            // Función para abrir el modal con la imagen actualmente visible
-            slider.addEventListener('click', function () {
-                currentSlider = slider;
-                currentSliderImages = images;
-                currentModalIndex = currentIndex;
+            slider.addEventListener('click', function (event) {
+                if (!event.target.classList.contains('prev-button') && !event.target.classList.contains('next-button')) {
+                    currentSlider = slider;
+                    currentSliderImages = images;
+                    currentModalIndex = currentIndex;
 
-                showImageInModal(currentModalIndex);
+                    showImageInModal(currentModalIndex);
 
-                // Mostrar u ocultar botones de navegación en el modal según la cantidad de imágenes
-                if (currentSliderImages.length > 1) {
-                    modalPrevButton.style.display = 'block';
-                    modalNextButton.style.display = 'block';
-                } else {
-                    modalPrevButton.style.display = 'none';
-                    modalNextButton.style.display = 'none';
+                    if (currentSliderImages.length > 1) {
+                        modalPrevButton.style.display = 'block';
+                        modalNextButton.style.display = 'block';
+                    } else {
+                        modalPrevButton.style.display = 'none';
+                        modalNextButton.style.display = 'none';
+                    }
+
+                    modal.style.display = 'flex';
                 }
-
-                // Mostrar el modal
-                modal.style.display = 'flex';
             });
         });
 
-        // Función para cambiar la imagen en el slider y sincronizar con el modal
         function changeImage(direction, images) {
             images[currentModalIndex].classList.remove('opacity-100');
             images[currentModalIndex].classList.add('opacity-0');
@@ -135,13 +130,11 @@
             images[currentModalIndex].classList.remove('opacity-0');
             images[currentModalIndex].classList.add('opacity-100');
 
-            // Sincronizar el modal si está abierto
             if (modal.style.display === 'flex') {
                 showImageInModal(currentModalIndex);
             }
         }
 
-        // Cerrar el modal
         closeModalButton.addEventListener('click', function () {
             modal.style.display = 'none';
         });
@@ -152,7 +145,6 @@
             }
         });
 
-        // Navegar imágenes en el modal y sincronizar con el slider
         modalNextButton.addEventListener('click', function () {
             changeImage('next', currentSliderImages);
         });
@@ -161,7 +153,6 @@
             changeImage('prev', currentSliderImages);
         });
 
-        // Función para mostrar la imagen en el modal
         function showImageInModal(index) {
             modalImage.classList.remove('opacity-100');
             modalImage.classList.add('opacity-0');

@@ -32,17 +32,25 @@
                             @endif
                         </div>
                     @else
-                        <!-- En caso de que no haya imágenes disponibles -->
                         <img src="{{ asset('storage/placeholder.png') }}" alt="Imagen de {{ $producto->nombre }}" class="object-contain w-full h-full" style="user-select: none;">
                     @endif
                 </div>
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">{{ $producto->nombre }}</h2>
-                <p class="text-gray-500 dark:text-gray-400 mb-2">Categoría: {{ $producto->categoria->nombre }}</p>
-                <p class="text-gray-600 dark:text-gray-300">{{ $producto->descripcion }}</p>
-                <p class="text-gray-800 dark:text-gray-100 mt-4 font-bold text-lg">${{ number_format($producto->precio, 2) }}</p>
+                <p class="text-gray-900 dark:text-white mb-2"><strong>Categoría:</strong> {{ $producto->categoria->nombre ?? 'Sin categoría' }}</p>
+                <p class="text-gray-900 dark:text-white mb-2">{{ $producto->descripcion }}</p>
+                <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg">${{ number_format($producto->precio, 0, ',', '.') }}</p>
+                <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> {{ $producto->stock }}</p>
+                <p class="text-gray-900 dark:text-white mb-2"><strong>Proveedor:</strong> {{ $producto->creador ? $producto->creador->name : 'Sin proveedor' }}</p>
+                <p class="mb-4">
+                    @if ($producto->contacto_whatsapp)
+                        <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">Contacto por WhatsApp</a>
+                    @else
+                        <span class="text-gray-900 dark:text-gray-400">Sin contacto</span>
+                    @endif
+                </p>
                 <div class="mt-4">
                     @guest
-                        <a href="{{ route('login') }}" class="inline-block px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-800 transition-all duration-300">Inicia sesión para solicitar una cotización</a>
+                        <a href="{{ route('login') }}" class="inline-block px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-800 transition-all duration-300">Inicia sesión para comprar</a>
                     @endguest
                 </div>
             </div>
@@ -71,6 +79,20 @@
         let currentModalIndex = 0;
         let currentSliderImages = [];
         let currentSlider = null;
+        let autoRotateInterval;
+
+        // Iniciar rotación automática
+        function startAutoRotate() {
+            stopAutoRotate();
+            autoRotateInterval = setInterval(() => {
+                changeImage('next', currentSliderImages);
+            }, 3000);
+        }
+
+        // Detener rotación automática
+        function stopAutoRotate() {
+            clearInterval(autoRotateInterval);
+        }
 
         sliders.forEach(slider => {
             let currentIndex = 0;
@@ -79,13 +101,7 @@
             const nextButton = slider.querySelector('.next-button');
 
             if (images.length > 1) {
-                setInterval(() => {
-                    images[currentIndex].classList.remove('opacity-100');
-                    images[currentIndex].classList.add('opacity-0');
-                    currentIndex = (currentIndex + 1) % images.length;
-                    images[currentIndex].classList.remove('opacity-0');
-                    images[currentIndex].classList.add('opacity-100');
-                }, 3000);
+                startAutoRotate();
 
                 nextButton?.addEventListener('click', () => {
                     changeImage('next', images);
@@ -103,6 +119,9 @@
                     currentModalIndex = currentIndex;
 
                     showImageInModal(currentModalIndex);
+
+                    // Detener la rotación automática al abrir el modal
+                    stopAutoRotate();
 
                     if (currentSliderImages.length > 1) {
                         modalPrevButton.style.display = 'block';
@@ -137,11 +156,13 @@
 
         closeModalButton.addEventListener('click', function () {
             modal.style.display = 'none';
+            startAutoRotate(); // Reanudar rotación automática
         });
 
         modal.addEventListener('click', function (e) {
             if (e.target === modal) {
                 modal.style.display = 'none';
+                startAutoRotate(); // Reanudar rotación automática
             }
         });
 
@@ -162,14 +183,6 @@
                 modalImage.classList.add('opacity-100');
             }, 10);
         }
-
-        function syncSliderImage(index) {
-            currentSliderImages.forEach((img, i) => {
-                img.classList.toggle('opacity-100', i === index);
-                img.classList.toggle('opacity-0', i !== index);
-            });
-        }
     });
 </script>
-
 @endsection

@@ -32,11 +32,30 @@
             </select>
         </div>
 
+        <!-- Campo de Stock -->
+        <div class="mb-4">
+            <label for="stock" class="block text-gray-700 dark:text-gray-200 mb-1">Stock:</label>
+            <input type="number" name="stock" id="stock" value="{{ $producto->stock }}" 
+                   class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                   required min="0" oninput="this.value = Math.max(this.value, 0)">
+        </div>
+
+        <!-- Campo de Prefijo y Contacto de WhatsApp -->
+        <div class="mb-4">
+            <label for="contacto_whatsapp" class="block text-gray-700 dark:text-gray-200 mb-1">Contacto de WhatsApp:</label>
+            <div class="flex">
+                <select name="prefijo" class="p-2 border rounded-l-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <option value="+57" selected>+57</option>
+                    <!-- Agrega más opciones si es necesario -->
+                </select>
+                <input type="text" name="contacto_whatsapp" id="contacto_whatsapp" value="{{ str_replace('+57', '', $producto->contacto_whatsapp) }}" class="w-full p-2 border rounded-r-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+            </div>
+        </div>
+
         <!-- Sección para imágenes ya subidas y nuevas imágenes -->
         <div class="mb-4">
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Imágenes:</label>
             <div class="flex flex-wrap gap-4 items-center" id="imagenes-container">
-                <!-- Imágenes existentes -->
                 @foreach($producto->imagenes as $imagen)
                     <div class="relative w-32 h-40 border rounded-lg dark:bg-gray-700 dark:border-gray-600 overflow-hidden flex flex-col justify-between items-center p-1" data-imagen-id="{{ $imagen->id }}">
                         <a href="#" class="open-modal cursor-pointer" data-image-url="data:image/jpeg;base64,{{ $imagen->contenido }}">
@@ -49,14 +68,11 @@
                         <input type="hidden" name="eliminar_imagenes[]" value="" disabled>
                     </div>
                 @endforeach
-
-                <!-- Contenedor para previsualizar las nuevas imágenes -->
                 <div class="flex gap-4 items-center" id="preview-imagenes"></div>
             </div>
         </div>
 
         <div class="flex gap-4 items-center mb-6">
-            <!-- Input para subir nuevas imágenes -->
             <label for="imagenes" class="block cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 text-center w-auto">
                 <input type="file" name="imagenes[]" id="imagenes" multiple class="hidden">
                 <span>Elegir archivos</span>
@@ -74,12 +90,10 @@
     </form>
 </div>
 
-<!-- Botón para subir rápidamente -->
 <a href="#" id="backToTopButton" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-800 text-white rounded-full p-3 shadow-lg transition-all duration-300">
     &#8679;
 </a>
 
-<!-- Modal para mostrar la imagen -->
 <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50 hidden no-select">
     <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl mx-auto mt-20">
         <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
@@ -89,7 +103,6 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Modal para imágenes
         const openModalButtons = document.querySelectorAll('.open-modal');
         const modal = document.getElementById('imageModal');
         const modalImage = document.getElementById('modalImage');
@@ -110,26 +123,16 @@
             modal.classList.remove('flex');
         });
 
-        // Cerrar modal al hacer clic fuera del contenedor de la imagen
-        modal.addEventListener('click', function (e) {
-            if (e.target === modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        });
-
-        // Marcar imágenes para eliminar
         document.querySelectorAll('.eliminar-imagen').forEach(button => {
             button.addEventListener('click', function () {
                 const imagenDiv = this.closest('div[data-imagen-id]');
                 const eliminarInput = imagenDiv.querySelector('input[name="eliminar_imagenes[]"]');
-                eliminarInput.disabled = false; // Habilitar el input para que se envíe al servidor
+                eliminarInput.disabled = false;
                 eliminarInput.value = imagenDiv.getAttribute('data-imagen-id');
-                imagenDiv.classList.add('hidden'); // Ocultar la imagen visualmente
+                imagenDiv.classList.add('hidden');
             });
         });
 
-        // Previsualizar nuevas imágenes seleccionadas y mantener las anteriores
         const imagenesInput = document.getElementById('imagenes');
         const previewContainer = document.getElementById('preview-imagenes');
         let dataTransfer = new DataTransfer();
@@ -153,7 +156,7 @@
                     });
 
                     const fileName = document.createElement('span');
-                    fileName.classList.add('text-xs', 'text-center', 'text-gray-600', 'dark:text-gray-300', 'mt-0'); // Eliminar el margen superior del texto
+                    fileName.classList.add('text-xs', 'text-center', 'text-gray-600', 'dark:text-gray-300');
                     fileName.innerText = file.name;
 
                     const deleteButton = document.createElement('button');
@@ -208,16 +211,8 @@
 </script>
 
 <style>
-    .no-select {
-        user-select: none;
-    }
-
-    #backToTopButton {
-        display: none;
-    }
-
-    .cursor-pointer {
-        cursor: pointer;
-    }
+    .no-select { user-select: none; }
+    #backToTopButton { display: none; }
+    .cursor-pointer { cursor: pointer; }
 </style>
 @endsection

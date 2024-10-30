@@ -6,12 +6,13 @@ use App\Models\Producto;
 use App\Models\Imagen;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProductoController extends Controller
 {
     public function index()
     {
-        $productos = Producto::with('imagenes', 'categoria')->get();
+        $productos = Producto::with('imagenes', 'categoria', 'creador')->get();
         return view('admin.productos.index', compact('productos'));
     }
 
@@ -23,9 +24,10 @@ class ProductoController extends Controller
 
     public function store(Request $request)
     {
-        // Remover los puntos del precio ingresado y validarlo
+        // Limpiar el formato del precio ingresado
         $request->merge([
-            'precio' => str_replace('.', '', $request->input('precio'))
+            'precio' => str_replace('.', '', $request->input('precio')),
+            'contacto_whatsapp' => '+57' . $request->input('contacto_whatsapp') // Prefijo agregado en el controlador
         ]);
 
         $request->validate([
@@ -33,10 +35,20 @@ class ProductoController extends Controller
             'descripcion' => 'required|string',
             'precio' => 'required|numeric|min:0|max:100000000',
             'categoria_id' => 'required|exists:categorias,id',
+            'stock' => 'required|integer|min:0',
+            'contacto_whatsapp' => 'required|string|size:13', // Incluye el prefijo +57
             'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $producto = Producto::create($request->only('nombre', 'descripcion', 'precio', 'categoria_id'));
+        $producto = Producto::create([
+            'nombre' => $request->nombre,
+            'descripcion' => $request->descripcion,
+            'precio' => $request->precio,
+            'categoria_id' => $request->categoria_id,
+            'stock' => $request->stock,
+            'contacto_whatsapp' => $request->contacto_whatsapp,
+            'user_id' => Auth::id(),
+        ]);
 
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
@@ -61,9 +73,9 @@ class ProductoController extends Controller
 
     public function update(Request $request, Producto $producto)
     {
-        // Remover los puntos del precio ingresado y validarlo
         $request->merge([
-            'precio' => str_replace('.', '', $request->input('precio'))
+            'precio' => str_replace('.', '', $request->input('precio')),
+            'contacto_whatsapp' => '+57' . $request->input('contacto_whatsapp')
         ]);
 
         $request->validate([
@@ -71,13 +83,20 @@ class ProductoController extends Controller
             'descripcion' => 'required|string',
             'precio' => 'required|numeric|min:0|max:100000000',
             'categoria_id' => 'required|exists:categorias,id',
+            'stock' => 'required|integer|min:0',
+            'contacto_whatsapp' => 'required|string|size:13', // Incluye prefijo +57
             'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Actualizar los datos del producto
-        $producto->update($request->only('nombre', 'descripcion', 'precio', 'categoria_id'));
+        $producto->update([
+            'nombre' => $request->nombre,
+            'descripcion' => $request->descripcion,
+            'precio' => $request->precio,
+            'categoria_id' => $request->categoria_id,
+            'stock' => $request->stock,
+            'contacto_whatsapp' => $request->contacto_whatsapp,
+        ]);
 
-        // Eliminar imágenes seleccionadas
         if ($request->has('eliminar_imagenes')) {
             foreach ($request->eliminar_imagenes as $imagenId) {
                 $imagen = Imagen::find($imagenId);
@@ -87,7 +106,6 @@ class ProductoController extends Controller
             }
         }
 
-        // Añadir nuevas imágenes
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 $path = $imagen->getClientOriginalName();

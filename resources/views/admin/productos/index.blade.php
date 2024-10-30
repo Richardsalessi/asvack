@@ -13,6 +13,9 @@
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Descripción</th>
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Precio</th>
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Categoría</th>
+                    <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Stock</th>
+                    <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Proveedor</th>
+                    <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Contacto</th>
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Acciones</th>
                 </tr>
             </thead>
@@ -20,22 +23,35 @@
                 @foreach ($productos as $producto)
                 <tr class="border-b border-gray-200 dark:border-gray-700">
                     <td class="px-6 py-4 flex gap-2 items-center">
-                        @if ($producto->imagenes->isNotEmpty())
-                            @foreach ($producto->imagenes as $imagen)
-                                <a href="#" class="open-modal" data-image-url="data:image/jpeg;base64,{{ $imagen->contenido }}">
-                                    <img src="data:image/jpeg;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="h-20 w-20 object-cover rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
-                                </a>
-                            @endforeach
-                        @else
-                            <div class="h-20 w-20 flex items-center justify-center bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-lg shadow-md border border-gray-400 dark:border-gray-600 text-center p-2">
-                                <span class="text-sm font-semibold text-white leading-tight">Sin imagen<br>disponible</span>
-                            </div>
+                        @foreach ($producto->imagenes->take(3) as $imagen)
+                            <a href="#" class="open-modal" data-image-url="data:image/jpeg;base64,{{ $imagen->contenido }}">
+                                <img src="data:image/jpeg;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="h-16 w-16 object-cover rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+                            </a>
+                        @endforeach
+                        @if ($producto->imagenes->count() > 3)
+                            <span class="text-sm text-gray-500 dark:text-gray-400">+{{ $producto->imagenes->count() - 3 }}</span>
                         @endif
                     </td>
+
                     <td class="px-6 py-4 text-gray-900 dark:text-gray-300">{{ $producto->nombre }}</td>
-                    <td class="px-6 py-4 text-gray-900 dark:text-gray-300">{{ $producto->descripcion }}</td>
+
+                    <td class="px-6 py-4 text-gray-900 dark:text-gray-300">
+                        <a href="#" class="open-desc-modal text-blue-500 hover:underline" data-description="{{ $producto->descripcion }}">Ver descripción</a>
+                    </td>
+
                     <td class="px-6 py-4 text-gray-900 dark:text-gray-300">${{ number_format($producto->precio, 0, ',', '.') }}</td>
-                    <td class="px-6 py-4 text-gray-900 dark:text-gray-300">{{ $producto->categoria->nombre }}</td>
+                    <td class="px-6 py-4 text-gray-900 dark:text-gray-300">{{ $producto->categoria->nombre ?? 'Sin categoría' }}</td>
+                    <td class="px-6 py-4 text-gray-900 dark:text-gray-300">{{ $producto->stock }}</td>
+                    <td class="px-6 py-4 text-gray-900 dark:text-gray-300">
+                        {{ $producto->creador ? $producto->creador->name : 'Sin proveedor' }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-900 dark:text-gray-300">
+                        @if ($producto->contacto_whatsapp)
+                            <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="text-blue-500 hover:underline">WhatsApp</a>
+                        @else
+                            <span class="text-gray-500">Sin contacto</span>
+                        @endif
+                    </td>
                     <td class="px-6 py-4">
                         <a href="{{ route('admin.productos.edit', $producto) }}" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded transition-all duration-300 mr-2">Editar</a>
                         <form action="{{ route('admin.productos.destroy', $producto) }}" method="POST" class="inline-block">
@@ -51,51 +67,85 @@
     </div>
 </div>
 
+<!-- Modal para mostrar la descripción completa -->
+<div id="descModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 modal-hidden">
+    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-11/12 max-w-lg mx-auto mt-20 transform translate-y-20 opacity-0 transition-transform duration-300 ease-out" id="descModalContent">
+        <button id="closeDescModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
+        <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Descripción del Producto</h2>
+        <p id="descContent" class="text-gray-700 dark:text-gray-300"></p>
+    </div>
+</div>
+
 <!-- Modal para mostrar la imagen -->
-<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50 hidden no-select">
-    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl mx-auto mt-20">
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 modal-hidden">
+    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl mx-auto mt-20 transform translate-y-20 opacity-0 transition-transform duration-300 ease-out" id="imageModalContent">
         <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
         <img id="modalImage" src="" alt="Imagen del producto" class="w-full object-contain p-4">
     </div>
 </div>
 
-<!-- Botón para subir rápidamente -->
 <a href="#" id="backToTopButton" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-800 text-white rounded-full p-3 shadow-lg transition-all duration-300">
     &#8679;
 </a>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Modal para imágenes
+        const descModal = document.getElementById('descModal');
+        const descModalContent = document.getElementById('descModalContent');
+        const openDescModalButtons = document.querySelectorAll('.open-desc-modal');
+        const descContent = document.getElementById('descContent');
+        const closeDescModalButton = document.getElementById('closeDescModal');
+
+        const imageModal = document.getElementById('imageModal');
+        const imageModalContent = document.getElementById('imageModalContent');
         const openModalButtons = document.querySelectorAll('.open-modal');
-        const modal = document.getElementById('imageModal');
         const modalImage = document.getElementById('modalImage');
         const closeModalButton = document.getElementById('closeModal');
 
+        // Abrir el modal de descripción
+        openDescModalButtons.forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+                descContent.textContent = button.getAttribute('data-description');
+                descModal.classList.remove('modal-hidden');
+                descModalContent.classList.add('translate-y-0', 'opacity-100');
+            });
+        });
+
+        closeDescModalButton.addEventListener('click', function () {
+            descModal.classList.add('modal-hidden');
+            descModalContent.classList.remove('translate-y-0', 'opacity-100');
+        });
+
+        descModal.addEventListener('click', function (e) {
+            if (e.target === descModal) {
+                descModal.classList.add('modal-hidden');
+                descModalContent.classList.remove('translate-y-0', 'opacity-100');
+            }
+        });
+
+        // Abrir el modal de imagen
         openModalButtons.forEach(button => {
             button.addEventListener('click', function (e) {
                 e.preventDefault();
-                const imageUrl = button.getAttribute('data-image-url');
-                modalImage.src = imageUrl;
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
+                modalImage.src = button.getAttribute('data-image-url');
+                imageModal.classList.remove('modal-hidden');
+                imageModalContent.classList.add('translate-y-0', 'opacity-100');
             });
         });
 
         closeModalButton.addEventListener('click', function () {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            imageModal.classList.add('modal-hidden');
+            imageModalContent.classList.remove('translate-y-0', 'opacity-100');
         });
 
-        // Cerrar modal al hacer clic fuera del contenedor de la imagen
-        modal.addEventListener('click', function (e) {
-            if (e.target === modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
+        imageModal.addEventListener('click', function (e) {
+            if (e.target === imageModal) {
+                imageModal.classList.add('modal-hidden');
+                imageModalContent.classList.remove('translate-y-0', 'opacity-100');
             }
         });
 
-        // Botón para volver arriba
         const backToTopButton = document.getElementById('backToTopButton');
         backToTopButton.addEventListener('click', function (e) {
             e.preventDefault();
@@ -116,8 +166,10 @@
     .no-select {
         user-select: none;
     }
-
     #backToTopButton {
+        display: none;
+    }
+    .modal-hidden {
         display: none;
     }
 </style>

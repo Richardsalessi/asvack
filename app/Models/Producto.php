@@ -1,5 +1,6 @@
 <?php
 
+// app/Models/Producto.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,9 @@ class Producto extends Model
         'descripcion',
         'precio',
         'categoria_id',
+        'stock',
+        'contacto_whatsapp',
+        'user_id',
     ];
 
     public function categoria()
@@ -21,9 +25,13 @@ class Producto extends Model
         return $this->belongsTo(Categoria::class);
     }
 
-    // Relación con el modelo Imagen: un producto tiene muchas imágenes
     public function imagenes()
     {
         return $this->hasMany(Imagen::class);
+    }
+
+    public function creador()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

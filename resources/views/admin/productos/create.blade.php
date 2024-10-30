@@ -32,12 +32,25 @@
         </div>
 
         <div class="mb-4">
+            <label for="stock" class="block text-gray-700 dark:text-gray-200 mb-1">Stock:</label>
+            <input type="number" name="stock" id="stock" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required min="0" oninput="this.value = Math.max(this.value, 0)">
+        </div>
+
+        <!-- Campo de Contacto de WhatsApp con prefijo de Colombia -->
+        <div class="mb-4">
+            <label for="contacto_whatsapp" class="block text-gray-700 dark:text-gray-200 mb-1">Contacto de WhatsApp:</label>
+            <div class="flex">
+                <span class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-l-lg text-gray-700 dark:text-gray-200 border border-r-0 border-gray-300 dark:border-gray-600">+57</span>
+                <input type="text" name="contacto_whatsapp" id="contacto_whatsapp" class="w-full p-2 border rounded-r-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required placeholder="Número sin el prefijo +57">
+            </div>
+        </div>
+
+        <div class="mb-4">
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Imágenes:</label>
             <div class="flex flex-wrap gap-4 items-center" id="preview-imagenes"></div>
         </div>
 
         <div class="flex gap-4 items-center mb-6">
-            <!-- Input para subir nuevas imágenes -->
             <label for="imagenes" class="block cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 text-center w-auto">
                 <input type="file" name="imagenes[]" id="imagenes" multiple class="hidden">
                 <span>Elegir archivos</span>
@@ -84,7 +97,6 @@
             }
         });
 
-        // Previsualizar nuevas imágenes seleccionadas y mantener las anteriores
         const imagenesInput = document.getElementById('imagenes');
         const previewContainer = document.getElementById('preview-imagenes');
         let dataTransfer = new DataTransfer();

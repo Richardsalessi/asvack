@@ -2,36 +2,45 @@
 
 @section('content')
 <div class="py-8">
-    <!-- Logo de la empresa -->
-    <div class="text-center mb-8">
-        <img src="{{ asset('images/logo negro.png') }}" alt="Logo de Asvack" class="mx-auto w-48 dark:hidden">
-        <img src="{{ asset('images/loco blanco.png') }}" alt="Logo de Asvack" class="mx-auto w-48 hidden dark:block">
-    </div>
-
     <!-- Título principal -->
     <div class="text-center mb-8">
-        <h1 class="text-5xl font-extrabold text-gray-900 dark:text-white mb-4">Bienvenido a Asvack</h1>
-        <p class="text-2xl text-gray-600 dark:text-gray-300">Componentes de calidad para todos tus equipos.</p>
+        <h1 class="text-5xl font-extrabold text-gray-900 dark:text-white mb-4">Catálogo de Productos</h1>
+        <p class="text-2xl text-gray-600 dark:text-gray-300">Explora los componentes de calidad que nuestros proveedores tienen para ti.</p>
     </div>
 
-    <!-- Video como banner extendido al ancho total -->
-    <div class="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] mb-8">
-        <video autoplay loop muted class="w-full object-cover h-[500px] rounded-md shadow-lg">
-            <source src="{{ asset('videos/Video.mp4') }}" type="video/mp4">
-            Tu navegador no soporta la reproducción de videos.
-        </video>
+    <!-- Filtros -->
+    <div class="container mx-auto mb-8 px-4">
+        <div class="flex flex-wrap justify-center gap-4">
+            <!-- Filtro de Categorías -->
+            <select id="categoryFilter" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="applyFilters()">
+                <option value="">Todas las Categorías</option>
+                @foreach($categorias as $categoria)
+                    <option value="{{ $categoria->id }}">{{ $categoria->nombre }}</option>
+                @endforeach
+            </select>
+
+            <!-- Filtro de Proveedores -->
+            <select id="providerFilter" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="applyFilters()">
+                <option value="">Todos los Proveedores</option>
+                @foreach($proveedores as $proveedor)
+                    <option value="{{ $proveedor->id }}">{{ $proveedor->name }}</option>
+                @endforeach
+            </select>
+
+            <!-- Filtro de Precios -->
+            <select id="priceFilter" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="applyFilters()">
+                <option value="">Ordenar por Precio</option>
+                <option value="asc">Menor a Mayor</option>
+                <option value="desc">Mayor a Menor</option>
+            </select>
+        </div>
     </div>
 
-    <!-- Título para la sección de algunos productos -->
-    <div class="text-center mt-16 mb-8">
-        <h2 class="text-4xl font-bold text-gray-900 dark:text-white">Algunos de Nuestros Productos</h2>
-        <p class="text-lg text-gray-600 dark:text-gray-300">Descubre una selección de nuestros mejores productos.</p>
-    </div>
-
-    <!-- Sección de productos aleatorios -->
+    <!-- Sección de productos -->
     <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        @foreach ($productosAleatorios as $producto)
+        @foreach ($productos as $producto)
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex flex-col items-center text-center">
+                <!-- Carrusel de imágenes -->
                 <div class="h-64 w-full mb-4 overflow-hidden relative">
                     @if($producto->imagenes->isNotEmpty())
                         <div class="slider relative h-full w-full" style="user-select: none;">
@@ -39,28 +48,27 @@
                                 <img src="data:image/png;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="slider-image object-contain w-full h-full absolute top-0 left-0 opacity-0 transition-opacity duration-1000 cursor-pointer {{ $loop->first ? 'opacity-100' : '' }}">
                             @endforeach
                             @if($producto->imagenes->count() > 1)
-                                <button class="prev-button absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="user-select: none;">&#8249;</button>
-                                <button class="next-button absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="user-select: none;">&#8250;</button>
+                                <button class="prev-button absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">&#8249;</button>
+                                <button class="next-button absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">&#8250;</button>
                             @endif
                         </div>
                     @else
                         <img src="{{ asset('storage/placeholder.png') }}" alt="Imagen de {{ $producto->nombre }}" class="object-contain w-full h-full" style="user-select: none;">
                     @endif
                 </div>
+
+                <!-- Información del producto -->
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">{{ $producto->nombre }}</h2>
-                
-                <!-- Especificaciones técnicas -->
-                <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">Especificaciones técnicas:</p>
-                <p class="text-gray-900 dark:text-white mb-2">{{ $producto->descripcion }}</p>
-                
-                <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg"><strong>Precio:</strong> ${{ number_format($producto->precio, 0, ',', '.') }}</p>
-                <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> {{ $producto->stock }}</p>
-                <p class="text-gray-900 dark:text-white mb-2"><strong>Proveedor:</strong> {{ $producto->creador ? $producto->creador->name : 'Sin proveedor' }}</p>
-                
-                @if ($producto->contacto_whatsapp)
-                    <p class="mb-4">
-                        <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">Contacto por WhatsApp</a>
-                    </p>
+                <p class="text-gray-700 dark:text-gray-300">{{ $producto->descripcion }}</p>
+                <p class="text-lg font-bold text-gray-900 dark:text-white mt-2">Precio: ${{ number_format($producto->precio, 0, ',', '.') }}</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">Unidades disponibles: {{ $producto->stock }}</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">Proveedor: {{ $producto->creador->name ?? 'No especificado' }}</p>
+
+                <!-- Botón de contacto -->
+                @if($producto->contacto_whatsapp)
+                    <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">
+                        Contacto por WhatsApp
+                    </a>
                 @endif
             </div>
         @endforeach
@@ -78,6 +86,18 @@
 </div>
 
 <script>
+    function applyFilters() {
+        const category = document.getElementById('categoryFilter').value;
+        const provider = document.getElementById('providerFilter').value;
+        const price = document.getElementById('priceFilter').value;
+        
+        let url = `{{ route('catalogo') }}?`;
+        if (category) url += `category=${category}&`;
+        if (provider) url += `provider=${provider}&`;
+        if (price) url += `price=${price}`;
+        window.location.href = url;
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const sliders = document.querySelectorAll('.slider');
         const modal = document.getElementById('imageModal');
@@ -147,12 +167,7 @@
             images[currentModalIndex].classList.remove('opacity-100');
             images[currentModalIndex].classList.add('opacity-0');
 
-            if (direction === 'next') {
-                currentModalIndex = (currentModalIndex + 1) % images.length;
-            } else {
-                currentModalIndex = (currentModalIndex - 1 + images.length) % images.length;
-            }
-
+            currentModalIndex = (direction === 'next') ? (currentModalIndex + 1) % images.length : (currentModalIndex - 1 + images.length) % images.length;
             images[currentModalIndex].classList.remove('opacity-0');
             images[currentModalIndex].classList.add('opacity-100');
 

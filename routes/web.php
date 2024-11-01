@@ -4,26 +4,28 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\CategoriaController;
 use App\Models\Producto;
+use App\Models\Categoria;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
-// Página principal para usuarios anónimos
+// Página principal accesible para todos, tanto autenticados como anónimos
 Route::get('/', function () {
     $productosAleatorios = Producto::inRandomOrder()->take(6)->with('imagenes', 'categoria', 'creador')->get();
     return view('welcome', compact('productosAleatorios'));
-})->name('home')->middleware('guest');
+})->name('home');
 
-// Página de bienvenida para usuarios autenticados con rol de admin o proveedor
-Route::middleware(['auth', 'can:admin-provider-access'])->group(function () {
-    Route::get('/welcome_auth', function () {
-        $productosAleatorios = Producto::inRandomOrder()->take(6)->with('imagenes', 'categoria', 'creador')->get();
-        return view('welcome_auth', compact('productosAleatorios'));
-    })->name('welcome.auth');
-});
+// Página de catálogo para usuarios anónimos y autenticados
+Route::get('/catalogo', function () {
+    $productos = Producto::with('imagenes', 'categoria', 'creador')->get();
+    $categorias = Categoria::all();
+    $proveedores = User::role('provider')->get();
+    return view('catalogo', compact('productos', 'categorias', 'proveedores'));
+})->name('catalogo');
 
-// Redirección al `welcome_auth` después de iniciar sesión
+// Redirección al `home` después de iniciar sesión
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
-        return redirect()->route('welcome.auth');
+        return redirect()->route('home');
     })->name('dashboard');
 
     Route::get('/admin/dashboard', function () {

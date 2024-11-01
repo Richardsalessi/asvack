@@ -10,15 +10,16 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
+        // Crear permisos específicos para roles
         $adminAccess = Permission::firstOrCreate(['name' => 'admin-access']);
         $providerAccess = Permission::firstOrCreate(['name' => 'provider-access']);
-        $adminProviderAccess = Permission::firstOrCreate(['name' => 'admin-provider-access']);
 
+        // Crear roles de admin y proveedor
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $providerRole = Role::firstOrCreate(['name' => 'provider']);
 
-        $adminRole->givePermissionTo([$adminAccess, $adminProviderAccess]);
-        $providerRole->givePermissionTo([$providerAccess, $adminProviderAccess]);
+        // Asignar permisos a cada rol
+        $adminRole->givePermissionTo([$adminAccess]);
+        $providerRole->givePermissionTo([$providerAccess]);
     }
 }
-

@@ -1,6 +1,5 @@
 <?php
 
-// app/Models/Producto.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,5 +32,15 @@ class Producto extends Model
     public function creador()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Relación de muchos a muchos con las compras.
+     * 
+     * Un producto puede estar en muchas compras.
+     */
+    public function compras()
+    {
+        return $this->belongsToMany(Compra::class)->withPivot('cantidad', 'precio_total');
     }
 }

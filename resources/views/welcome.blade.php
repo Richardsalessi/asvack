@@ -2,6 +2,12 @@
 
 @section('content')
 <div class="py-8">
+    <!-- Logo de la empresa -->
+    <div class="text-center mb-8">
+        <img src="{{ asset('images/logo negro.png') }}" alt="Logo de Asvack" class="mx-auto w-48 dark:hidden">
+        <img src="{{ asset('images/loco blanco.png') }}" alt="Logo de Asvack" class="mx-auto w-48 hidden dark:block">
+    </div>
+
     <!-- Título principal -->
     <div class="text-center mb-8">
         <h1 class="text-5xl font-extrabold text-gray-900 dark:text-white mb-4">Bienvenido a Asvack</h1>
@@ -16,15 +22,21 @@
         </video>
     </div>
 
-    <!-- Catálogo de productos -->
+    <!-- Título para la sección de algunos productos -->
+    <div class="text-center mt-16 mb-8">
+        <h2 class="text-4xl font-bold text-gray-900 dark:text-white">Algunos de Nuestros Productos</h2>
+        <p class="text-lg text-gray-600 dark:text-gray-300">Descubre una selección de nuestros mejores productos.</p>
+    </div>
+
+    <!-- Sección de productos aleatorios -->
     <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        @foreach ($productos as $producto)
-            <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+        @foreach ($productosAleatorios as $producto)
+            <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex flex-col items-center text-center">
                 <div class="h-64 w-full mb-4 overflow-hidden relative">
                     @if($producto->imagenes->isNotEmpty())
                         <div class="slider relative h-full w-full" style="user-select: none;">
                             @foreach($producto->imagenes as $imagen)
-                                <img src="data:image/png;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="slider-image object-contain w-full h-full absolute top-0 left-0 opacity-0 transition-opacity duration-1000 cursor-pointer {{ $loop->first ? 'opacity-100' : '' }}" onclick="openModal(this)">
+                                <img src="data:image/png;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="slider-image object-contain w-full h-full absolute top-0 left-0 opacity-0 transition-opacity duration-1000 cursor-pointer {{ $loop->first ? 'opacity-100' : '' }}">
                             @endforeach
                             @if($producto->imagenes->count() > 1)
                                 <button class="prev-button absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="user-select: none;">&#8249;</button>
@@ -36,21 +48,30 @@
                     @endif
                 </div>
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">{{ $producto->nombre }}</h2>
-                <p class="text-gray-900 dark:text-white mb-2"><strong>Categoría:</strong> {{ $producto->categoria->nombre ?? 'Sin categoría' }}</p>
+                
+                <!-- Especificaciones técnicas -->
+                <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">Especificaciones técnicas:</p>
                 <p class="text-gray-900 dark:text-white mb-2">{{ $producto->descripcion }}</p>
-                <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg">${{ number_format($producto->precio, 0, ',', '.') }}</p>
+                
+                <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg"><strong>Precio:</strong> ${{ number_format($producto->precio, 0, ',', '.') }}</p>
                 <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> {{ $producto->stock }}</p>
                 <p class="text-gray-900 dark:text-white mb-2"><strong>Proveedor:</strong> {{ $producto->creador ? $producto->creador->name : 'Sin proveedor' }}</p>
-                <p class="mb-4">
+                
+                @auth
                     @if ($producto->contacto_whatsapp)
-                        <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">Contacto por WhatsApp</a>
-                    @else
-                        <span class="text-gray-900 dark:text-gray-400">Sin contacto</span>
+                        <p class="mb-4">
+                            <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">Contacto por WhatsApp</a>
+                        </p>
                     @endif
-                </p>
-                <div class="mt-4">
+                @endauth
+
+                <div class="mt-4 flex gap-2 justify-center">
                     @guest
                         <a href="{{ route('login') }}" class="inline-block px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-800 transition-all duration-300">Inicia sesión para comprar</a>
+                    @else
+                        @can('client-access')
+                            <a href="{{ route('compra.formulario', $producto->id) }}" class="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-800 transition-all duration-300">Comprar</a>
+                        @endcan
                     @endguest
                 </div>
             </div>
@@ -81,15 +102,13 @@
         let currentSlider = null;
         let autoRotateInterval;
 
-        // Iniciar rotación automática
-        function startAutoRotate() {
+        function startAutoRotate(sliderImages) {
             stopAutoRotate();
             autoRotateInterval = setInterval(() => {
-                changeImage('next', currentSliderImages);
+                changeImage('next', sliderImages);
             }, 3000);
         }
 
-        // Detener rotación automática
         function stopAutoRotate() {
             clearInterval(autoRotateInterval);
         }
@@ -101,7 +120,7 @@
             const nextButton = slider.querySelector('.next-button');
 
             if (images.length > 1) {
-                startAutoRotate();
+                startAutoRotate(images);
 
                 nextButton?.addEventListener('click', () => {
                     changeImage('next', images);
@@ -116,11 +135,11 @@
                 if (!event.target.classList.contains('prev-button') && !event.target.classList.contains('next-button')) {
                     currentSlider = slider;
                     currentSliderImages = images;
-                    currentModalIndex = currentIndex;
+                    const visibleImage = Array.from(images).findIndex(image => image.classList.contains('opacity-100'));
+                    currentModalIndex = visibleImage !== -1 ? visibleImage : 0;
 
                     showImageInModal(currentModalIndex);
 
-                    // Detener la rotación automática al abrir el modal
                     stopAutoRotate();
 
                     if (currentSliderImages.length > 1) {
@@ -156,13 +175,13 @@
 
         closeModalButton.addEventListener('click', function () {
             modal.style.display = 'none';
-            startAutoRotate(); // Reanudar rotación automática
+            startAutoRotate(currentSliderImages);
         });
 
         modal.addEventListener('click', function (e) {
             if (e.target === modal) {
                 modal.style.display = 'none';
-                startAutoRotate(); // Reanudar rotación automática
+                startAutoRotate(currentSliderImages);
             }
         });
 

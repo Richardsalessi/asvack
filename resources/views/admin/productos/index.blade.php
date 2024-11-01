@@ -80,7 +80,7 @@
 <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 modal-hidden">
     <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl mx-auto mt-20 transform translate-y-20 opacity-0 transition-transform duration-300 ease-out" id="imageModalContent">
         <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
-        <img id="modalImage" src="" alt="Imagen del producto" class="w-full object-contain p-4">
+        <img id="modalImage" src="" alt="Imagen del producto" class="w-full object-contain p-4 no-select">
     </div>
 </div>
 

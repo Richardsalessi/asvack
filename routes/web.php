@@ -1,25 +1,24 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ProductoController; // Importar el controlador de productos
-use App\Http\Controllers\CategoriaController; // Importar el controlador de categorías
+use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\CompraController;
 use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 
-// Página principal
+// Página principal con productos aleatorios
 Route::get('/', function () {
-    $productos = Producto::all(); // Obtén todos los productos
-    return view('welcome', compact('productos'));
+    $productosAleatorios = Producto::inRandomOrder()->take(6)->with('imagenes', 'categoria', 'creador')->get();
+    return view('welcome', compact('productosAleatorios')); // Pasar 'productosAleatorios' a la vista
 })->name('home');
 
 // Redirección al home después de iniciar sesión
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
-        // Redirigir a la página principal
         return redirect()->route('home');
     })->name('dashboard');
 
-    // Rutas para cada dashboard con permisos específicos
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
     })->middleware('can:admin-access')->name('admin.dashboard');
@@ -65,6 +64,12 @@ Route::resource('admin/productos', ProductoController::class)
         'update' => 'admin.productos.update',
         'destroy' => 'admin.productos.destroy',
     ]);
+
+// Rutas para el proceso de compra, solo accesible para clientes autenticados
+Route::middleware(['auth', 'can:client-access'])->group(function () {
+    Route::get('/comprar/{id}', [CompraController::class, 'showFormulario'])->name('compra.formulario');
+    Route::post('/comprar/procesar/{id}', [CompraController::class, 'procesarCompra'])->name('compra.procesar');
+});
 
 // Autenticación
 require __DIR__.'/auth.php';

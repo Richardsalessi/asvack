@@ -5,14 +5,12 @@
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('home') }}">
-                <!-- Logo para el modo claro -->
-                <img x-show="!darkMode" src="{{ asset('images/Logo official 01 black.png') }}" alt="Logo Claro" class="block h-16 w-auto">
-
-                <!-- Logo para el modo oscuro -->
-                <img x-show="darkMode" src="{{ asset('images/Logo official png white.png') }}" alt="Logo Oscuro" class="block h-16 w-auto">
+                        <!-- Logo para el modo claro -->
+                        <img x-show="!darkMode" src="{{ asset('images/Logo official 01 black.png') }}" alt="Logo Claro" class="block h-16 w-auto">
+                        <!-- Logo para el modo oscuro -->
+                        <img x-show="darkMode" src="{{ asset('images/Logo official png white.png') }}" alt="Logo Oscuro" class="block h-16 w-auto">
                     </a>
                 </div>
-
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex items-center">
@@ -29,10 +27,6 @@
                         @elserole('provider')
                             <x-nav-link :href="route('provider.dashboard')" :active="request()->routeIs('provider.dashboard')" class="text-gray-800 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-300">
                                 {{ __('Dashboard Proveedor') }}
-                            </x-nav-link>
-                        @elserole('client')
-                            <x-nav-link :href="route('client.dashboard')" :active="request()->routeIs('client.dashboard')" class="text-gray-800 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-300">
-                                {{ __('Dashboard Cliente') }}
                             </x-nav-link>
                         @endrole
                     @endauth
@@ -70,12 +64,12 @@
                 </span>
 
                 @guest
-                    <a href="{{ route('login') }}" class="text-gray-900 dark:text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300">
-                        Iniciar Sesión
-                    </a>
-                    <a href="{{ route('register') }}" class="ml-4 text-gray-900 dark:text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300">
-                        Registrarse
-                    </a>
+                    <!-- Mostrar el botón de Iniciar Sesión solo en welcome_auth -->
+                    @if(Request::is('welcome_auth'))
+                        <a href="{{ route('login') }}" class="text-gray-900 dark:text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300">
+                            Iniciar Sesión
+                        </a>
+                    @endif
                 @else
                     <!-- Dropdown -->
                     <x-dropdown align="right" width="48">
@@ -84,7 +78,7 @@
                                 <div>{{ Auth::user()->name }}</div>
                                 <div class="ml-1">
                                     <svg class="fill-current h-5 w-5 transition-all transform hover:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a 1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
                                 </div>
                             </button>

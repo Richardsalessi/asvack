@@ -33,14 +33,4 @@ class Producto extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-
-    /**
-     * Relación de muchos a muchos con las compras.
-     * 
-     * Un producto puede estar en muchas compras.
-     */
-    public function compras()
-    {
-        return $this->belongsToMany(Compra::class)->withPivot('cantidad', 'precio_total');
-    }
 }

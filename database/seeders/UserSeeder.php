@@ -30,15 +30,6 @@ class UserSeeder extends Seeder
         );
         $provider->assignRole('provider');
 
-        // Verificar si el usuario cliente ya existe
-        $client = User::firstOrCreate(
-            ['email' => 'cristian@gmail.com'],
-            [
-                'name' => 'Cristian',
-                'password' => bcrypt('proyecto2024'),
-            ]
-        );
-        $client->assignRole('client');
     }
 }
     

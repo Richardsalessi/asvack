@@ -3,20 +3,27 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\CategoriaController;
-use App\Http\Controllers\CompraController;
 use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 
-// Página principal con productos aleatorios
+// Página principal para usuarios anónimos
 Route::get('/', function () {
     $productosAleatorios = Producto::inRandomOrder()->take(6)->with('imagenes', 'categoria', 'creador')->get();
-    return view('welcome', compact('productosAleatorios')); // Pasar 'productosAleatorios' a la vista
-})->name('home');
+    return view('welcome', compact('productosAleatorios'));
+})->name('home')->middleware('guest');
 
-// Redirección al home después de iniciar sesión
+// Página de bienvenida para usuarios autenticados con rol de admin o proveedor
+Route::middleware(['auth', 'can:admin-provider-access'])->group(function () {
+    Route::get('/welcome_auth', function () {
+        $productosAleatorios = Producto::inRandomOrder()->take(6)->with('imagenes', 'categoria', 'creador')->get();
+        return view('welcome_auth', compact('productosAleatorios'));
+    })->name('welcome.auth');
+});
+
+// Redirección al `welcome_auth` después de iniciar sesión
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
-        return redirect()->route('home');
+        return redirect()->route('welcome.auth');
     })->name('dashboard');
 
     Route::get('/admin/dashboard', function () {
@@ -26,20 +33,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/provider/dashboard', function () {
         return view('provider.dashboard');
     })->middleware('can:provider-access')->name('provider.dashboard');
-
-    Route::get('/client/dashboard', function () {
-        return view('client.dashboard');
-    })->middleware('can:client-access')->name('client.dashboard');
 });
 
-// Rutas protegidas por autenticación para la edición del perfil del usuario
+// Rutas protegidas para perfil de usuario
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// CRUD de categorías, protegido por autenticación y permiso de administrador
+// CRUD de categorías, solo para administrador
 Route::resource('admin/categorias', CategoriaController::class)
     ->middleware(['auth', 'can:admin-access'])
     ->names([
@@ -52,7 +55,7 @@ Route::resource('admin/categorias', CategoriaController::class)
         'destroy' => 'admin.categorias.destroy',
     ]);
 
-// CRUD de productos, protegido por autenticación y permiso de administrador
+// CRUD de productos, solo para administrador
 Route::resource('admin/productos', ProductoController::class)
     ->middleware(['auth', 'can:admin-access'])
     ->names([
@@ -64,12 +67,6 @@ Route::resource('admin/productos', ProductoController::class)
         'update' => 'admin.productos.update',
         'destroy' => 'admin.productos.destroy',
     ]);
-
-// Rutas para el proceso de compra, solo accesible para clientes autenticados
-Route::middleware(['auth', 'can:client-access'])->group(function () {
-    Route::get('/comprar/{id}', [CompraController::class, 'showFormulario'])->name('compra.formulario');
-    Route::post('/comprar/procesar/{id}', [CompraController::class, 'procesarCompra'])->name('compra.procesar');
-});
 
 // Autenticación
 require __DIR__.'/auth.php';

@@ -44,14 +44,4 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-
-    /**
-     * Relación de uno a muchos con las compras realizadas por el usuario.
-     *
-     * Un usuario puede tener muchas compras.
-     */
-    public function compras()
-    {
-        return $this->hasMany(Compra::class);
-    }
 }

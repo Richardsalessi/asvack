@@ -15,7 +15,7 @@
             <select id="categoryFilter" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="applyFilters()">
                 <option value="">Todas las Categorías</option>
                 @foreach($categorias as $categoria)
-                    <option value="{{ $categoria->id }}">{{ $categoria->nombre }}</option>
+                    <option value="{{ $categoria->id }}" {{ request('category') == $categoria->id ? 'selected' : '' }}>{{ $categoria->nombre }}</option>
                 @endforeach
             </select>
 
@@ -23,22 +23,22 @@
             <select id="providerFilter" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="applyFilters()">
                 <option value="">Todos los Proveedores</option>
                 @foreach($proveedores as $proveedor)
-                    <option value="{{ $proveedor->id }}">{{ $proveedor->name }}</option>
+                    <option value="{{ $proveedor->id }}" {{ request('provider') == $proveedor->id ? 'selected' : '' }}>{{ $proveedor->name }}</option>
                 @endforeach
             </select>
 
             <!-- Filtro de Precios -->
             <select id="priceFilter" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="applyFilters()">
                 <option value="">Ordenar por Precio</option>
-                <option value="asc">Menor a Mayor</option>
-                <option value="desc">Mayor a Menor</option>
+                <option value="asc" {{ request('price') == 'asc' ? 'selected' : '' }}>Menor a Mayor</option>
+                <option value="desc" {{ request('price') == 'desc' ? 'selected' : '' }}>Mayor a Menor</option>
             </select>
         </div>
     </div>
 
     <!-- Sección de productos -->
     <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        @foreach ($productos as $producto)
+        @forelse ($productos as $producto)
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex flex-col items-center text-center">
                 <!-- Carrusel de imágenes -->
                 <div class="h-64 w-full mb-4 overflow-hidden relative">
@@ -57,21 +57,25 @@
                     @endif
                 </div>
 
-                <!-- Información del producto -->
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">{{ $producto->nombre }}</h2>
-                <p class="text-gray-700 dark:text-gray-300">{{ $producto->descripcion }}</p>
-                <p class="text-lg font-bold text-gray-900 dark:text-white mt-2">Precio: ${{ number_format($producto->precio, 0, ',', '.') }}</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">Unidades disponibles: {{ $producto->stock }}</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">Proveedor: {{ $producto->creador->name ?? 'No especificado' }}</p>
-
-                <!-- Botón de contacto -->
-                @if($producto->contacto_whatsapp)
-                    <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">
-                        Contacto por WhatsApp
-                    </a>
+                
+                <!-- Especificaciones técnicas -->
+                <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">Especificaciones técnicas:</p>
+                <p class="text-gray-900 dark:text-white mb-2">{{ $producto->descripcion }}</p>
+                
+                <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg"><strong>Precio:</strong> ${{ number_format($producto->precio, 0, ',', '.') }}</p>
+                <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> {{ $producto->stock }}</p>
+                <p class="text-gray-900 dark:text-white mb-2"><strong>Proveedor:</strong> {{ $producto->creador ? $producto->creador->name : 'Sin proveedor' }}</p>
+                
+                @if ($producto->contacto_whatsapp)
+                    <p class="mb-4">
+                        <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">Contacto por WhatsApp</a>
+                    </p>
                 @endif
             </div>
-        @endforeach
+        @empty
+            <p class="text-center text-gray-700 dark:text-gray-300">No hay productos disponibles en esta categoría.</p>
+        @endforelse
     </div>
 </div>
 

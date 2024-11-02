@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Producto;
 use App\Models\Imagen;
 use App\Models\Categoria;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,10 +25,9 @@ class ProductoController extends Controller
 
     public function store(Request $request)
     {
-        // Limpiar el formato del precio ingresado
         $request->merge([
             'precio' => str_replace('.', '', $request->input('precio')),
-            'contacto_whatsapp' => '+57' . $request->input('contacto_whatsapp') // Prefijo agregado en el controlador
+            'contacto_whatsapp' => '+57' . $request->input('contacto_whatsapp')
         ]);
 
         $request->validate([
@@ -36,7 +36,7 @@ class ProductoController extends Controller
             'precio' => 'required|numeric|min:0|max:100000000',
             'categoria_id' => 'required|exists:categorias,id',
             'stock' => 'required|integer|min:0',
-            'contacto_whatsapp' => 'required|string|size:13', // Incluye el prefijo +57
+            'contacto_whatsapp' => 'required|string|size:13',
             'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -84,7 +84,7 @@ class ProductoController extends Controller
             'precio' => 'required|numeric|min:0|max:100000000',
             'categoria_id' => 'required|exists:categorias,id',
             'stock' => 'required|integer|min:0',
-            'contacto_whatsapp' => 'required|string|size:13', // Incluye prefijo +57
+            'contacto_whatsapp' => 'required|string|size:13',
             'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -129,5 +129,35 @@ class ProductoController extends Controller
 
         $producto->delete();
         return redirect()->route('admin.productos.index')->with('success', 'Producto eliminado con éxito.');
+    }
+
+    public function catalogo(Request $request)
+    {
+        // Iniciamos la consulta de productos con las relaciones necesarias
+        $query = Producto::with('imagenes', 'categoria', 'creador');
+
+        // Aplicar filtro de categoría si está seleccionado
+        if ($request->filled('category')) {
+            $query->where('categoria_id', $request->input('category'));
+        }
+
+        // Aplicar filtro de proveedor si está seleccionado
+        if ($request->filled('provider')) {
+            $query->where('user_id', $request->input('provider'));
+        }
+
+        // Aplicar filtro de orden por precio si está seleccionado
+        if ($request->filled('price')) {
+            $query->orderBy('precio', $request->input('price'));
+        }
+
+        // Ejecutar la consulta y obtener los productos filtrados
+        $productos = $query->get();
+
+        // Cargar todas las categorías y proveedores para los filtros en la vista
+        $categorias = Categoria::all();
+        $proveedores = User::role('provider')->get();
+
+        return view('catalogo', compact('productos', 'categorias', 'proveedores'));
     }
 }

@@ -15,12 +15,7 @@ Route::get('/', function () {
 })->name('home');
 
 // Página de catálogo para usuarios anónimos y autenticados
-Route::get('/catalogo', function () {
-    $productos = Producto::with('imagenes', 'categoria', 'creador')->get();
-    $categorias = Categoria::all();
-    $proveedores = User::role('provider')->get();
-    return view('catalogo', compact('productos', 'categorias', 'proveedores'));
-})->name('catalogo');
+Route::get('/catalogo', [ProductoController::class, 'catalogo'])->name('catalogo');
 
 // Redirección al `home` después de iniciar sesión
 Route::middleware(['auth', 'verified'])->group(function () {

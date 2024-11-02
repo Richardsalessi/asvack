@@ -20,6 +20,19 @@
                     <x-nav-link :href="route('catalogo')" :active="request()->routeIs('catalogo')" class="text-gray-800 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-300">
                         {{ __('Catálogo') }}
                     </x-nav-link>
+
+                    @auth
+                        <!-- Enlace al dashboard correspondiente según el rol -->
+                        @role('admin')
+                            <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-gray-800 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-300">
+                                {{ __('Dashboard Admin') }}
+                            </x-nav-link>
+                        @elserole('provider')
+                            <x-nav-link :href="route('provider.dashboard')" :active="request()->routeIs('provider.dashboard')" class="text-gray-800 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-300">
+                                {{ __('Dashboard Proveedor') }}
+                            </x-nav-link>
+                        @endrole
+                    @endauth
                 </div>
             </div>
 

@@ -90,6 +90,7 @@
 </div>
 
 <script>
+    // Aplicar filtros y redirigir con parámetros en la URL
     function applyFilters() {
         const category = document.getElementById('categoryFilter').value;
         const provider = document.getElementById('providerFilter').value;
@@ -102,7 +103,21 @@
         window.location.href = url;
     }
 
+    // Restaurar valores predeterminados al recargar
+    function resetFilters() {
+        document.getElementById('categoryFilter').value = "";
+        document.getElementById('providerFilter').value = "";
+        document.getElementById('priceFilter').value = "";
+    }
+
+    // Evento para detectar la recarga de la página
     document.addEventListener('DOMContentLoaded', function() {
+        if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD) {
+            resetFilters();  // Llama a resetFilters al recargar la página
+            applyFilters();  // Aplica filtros con valores predeterminados
+        }
+
+        // Código de manejo del carrusel y modal de imágenes...
         const sliders = document.querySelectorAll('.slider');
         const modal = document.getElementById('imageModal');
         const modalImage = document.getElementById('modalImage');

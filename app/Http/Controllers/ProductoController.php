@@ -11,10 +11,23 @@ use Illuminate\Support\Facades\Auth;
 
 class ProductoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $productos = Producto::with('imagenes', 'categoria', 'creador')->get();
-        return view('admin.productos.index', compact('productos'));
+        // Consulta inicial de productos con sus relaciones
+        $query = Producto::with('imagenes', 'categoria', 'creador');
+
+        // Aplicar el filtro de proveedor si se ha seleccionado uno
+        if ($request->filled('proveedor')) {
+            $query->where('user_id', $request->proveedor);
+        }
+
+        // Obtener los productos resultantes y los proveedores disponibles para el filtro, incluyendo administradores
+        $productos = $query->get();
+        $proveedores = User::whereHas('roles', function ($query) {
+            $query->whereIn('name', ['provider', 'admin']); // Incluir roles "provider" y "admin"
+        })->get();
+
+        return view('admin.productos.index', compact('productos', 'proveedores'));
     }
 
     public function create()
@@ -133,30 +146,31 @@ class ProductoController extends Controller
 
     public function catalogo(Request $request)
     {
-        // Iniciamos la consulta de productos con las relaciones necesarias
+        // Consulta inicial de productos con relaciones
         $query = Producto::with('imagenes', 'categoria', 'creador');
 
-        // Aplicar filtro de categoría si está seleccionado
+        // Aplicar filtro de categoría
         if ($request->filled('category')) {
             $query->where('categoria_id', $request->input('category'));
         }
 
-        // Aplicar filtro de proveedor si está seleccionado
+        // Aplicar filtro de proveedor
         if ($request->filled('provider')) {
             $query->where('user_id', $request->input('provider'));
         }
 
-        // Aplicar filtro de orden por precio si está seleccionado
+        // Aplicar filtro de orden por precio
         if ($request->filled('price')) {
             $query->orderBy('precio', $request->input('price'));
         }
 
-        // Ejecutar la consulta y obtener los productos filtrados
         $productos = $query->get();
 
-        // Cargar todas las categorías y proveedores para los filtros en la vista
+        // Obtención de categorías y proveedores (incluyendo admin)
         $categorias = Categoria::all();
-        $proveedores = User::role('provider')->get();
+        $proveedores = User::whereHas('roles', function ($query) {
+            $query->whereIn('name', ['provider', 'admin']); // Incluir proveedores y administrador
+        })->get();
 
         return view('catalogo', compact('productos', 'categorias', 'proveedores'));
     }

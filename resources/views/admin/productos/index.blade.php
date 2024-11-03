@@ -4,6 +4,23 @@
 <div class="container mx-auto py-8">
     <h1 class="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Lista de Productos</h1>
     <a href="{{ route('admin.productos.create') }}" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded mb-4 inline-block transition-all duration-300">Añadir Producto</a>
+
+    <!-- Filtro de Proveedor -->
+    <div class="mb-4">
+        <form action="{{ route('admin.productos.index') }}" method="GET" class="flex items-center gap-4">
+            <label for="proveedor" class="text-gray-700 dark:text-gray-300 font-bold">Filtrar por Proveedor:</label>
+            <select name="proveedor" id="proveedor" class="w-64 px-4 py-2 border rounded-lg text-gray-900 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Todos los Proveedores</option>
+                @foreach($proveedores as $proveedor)
+                    <option value="{{ $proveedor->id }}" {{ request('proveedor') == $proveedor->id ? 'selected' : '' }}>
+                        {{ $proveedor->name }}
+                    </option>
+                @endforeach
+            </select>
+            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300">Filtrar</button>
+        </form>
+    </div>
+
     <div class="overflow-x-auto mt-4">
         <table class="min-w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
             <thead class="bg-gray-100 dark:bg-gray-700">

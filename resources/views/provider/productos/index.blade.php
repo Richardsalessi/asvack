@@ -2,24 +2,8 @@
 
 @section('content')
 <div class="container mx-auto py-8">
-    <h1 class="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Lista de Productos</h1>
-    <a href="{{ route('admin.productos.create') }}" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded mb-4 inline-block transition-all duration-300">Añadir Producto</a>
-
-    <!-- Filtro de Proveedor -->
-    <div class="mb-4">
-        <form action="{{ route('admin.productos.index') }}" method="GET" class="flex items-center gap-4">
-            <label for="proveedor" class="text-gray-700 dark:text-gray-300 font-bold">Filtrar por Proveedor:</label>
-            <select name="proveedor" id="proveedor" class="w-64 px-4 py-2 border rounded-lg text-gray-900 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Todos los Proveedores</option>
-                @foreach($proveedores as $proveedor)
-                    <option value="{{ $proveedor->id }}" {{ request('proveedor') == $proveedor->id ? 'selected' : '' }}>
-                        {{ $proveedor->name }}
-                    </option>
-                @endforeach
-            </select>
-            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300">Filtrar</button>
-        </form>
-    </div>
+    <h1 class="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Mis Productos</h1>
+    <a href="{{ route('provider.productos.create') }}" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded mb-4 inline-block transition-all duration-300">Añadir Producto</a>
 
     <div class="overflow-x-auto mt-4">
         <table class="min-w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
@@ -31,7 +15,6 @@
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Precio</th>
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Categoría</th>
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Stock</th>
-                    <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Proveedor</th>
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Contacto</th>
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Acciones</th>
                 </tr>
@@ -60,9 +43,6 @@
                     <td class="px-6 py-4 text-gray-900 dark:text-gray-300">{{ $producto->categoria->nombre ?? 'Sin categoría' }}</td>
                     <td class="px-6 py-4 text-gray-900 dark:text-gray-300">{{ $producto->stock }}</td>
                     <td class="px-6 py-4 text-gray-900 dark:text-gray-300">
-                        {{ $producto->creador ? $producto->creador->name : 'Sin proveedor' }}
-                    </td>
-                    <td class="px-6 py-4 text-gray-900 dark:text-gray-300">
                         @if ($producto->contacto_whatsapp)
                             <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="text-blue-500 hover:underline">WhatsApp</a>
                         @else
@@ -70,8 +50,8 @@
                         @endif
                     </td>
                     <td class="px-6 py-4">
-                        <a href="{{ route('admin.productos.edit', $producto) }}" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded transition-all duration-300 mr-2">Editar</a>
-                        <form action="{{ route('admin.productos.destroy', $producto) }}" method="POST" class="inline-block">
+                        <a href="{{ route('provider.productos.edit', $producto) }}" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded transition-all duration-300 mr-2">Editar</a>
+                        <form action="{{ route('provider.productos.destroy', $producto) }}" method="POST" class="inline-block">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded transition-all duration-300" onclick="return confirm('¿Estás seguro de eliminar este producto?')">Eliminar</button>
@@ -94,8 +74,8 @@
 </div>
 
 <!-- Modal para mostrar la imagen -->
-<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50 hidden no-select">
-    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden p-4 max-w-full max-h-full flex items-center justify-center">
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 modal-hidden flex items-center justify-center z-50 no-select">
+    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden p-4">
         <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-10">&times;</button>
         <img id="modalImage" src="" alt="Imagen del producto" class="max-w-full max-h-screen object-contain">
     </div>
@@ -115,6 +95,7 @@
 
         const imageModal = document.getElementById('imageModal');
         const modalImage = document.getElementById('modalImage');
+        const openModalButtons = document.querySelectorAll('.open-modal');
         const closeModalButton = document.getElementById('closeModal');
 
         // Abrir el modal de descripción
@@ -140,24 +121,21 @@
         });
 
         // Abrir el modal de imagen
-        document.querySelectorAll('.open-modal').forEach(button => {
+        openModalButtons.forEach(button => {
             button.addEventListener('click', function (e) {
                 e.preventDefault();
                 modalImage.src = button.getAttribute('data-image-url');
-                imageModal.classList.remove('hidden');
-                imageModal.classList.add('flex');
+                imageModal.classList.remove('modal-hidden');
             });
         });
 
         closeModalButton.addEventListener('click', function () {
-            imageModal.classList.add('hidden');
-            imageModal.classList.remove('flex');
+            imageModal.classList.add('modal-hidden');
         });
 
         imageModal.addEventListener('click', function (e) {
             if (e.target === imageModal) {
-                imageModal.classList.add('hidden');
-                imageModal.classList.remove('flex');
+                imageModal.classList.add('modal-hidden');
             }
         });
 

@@ -73,9 +73,9 @@
 </a>
 
 <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50 hidden no-select">
-    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl mx-auto mt-20">
-        <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
-        <img id="modalImage" src="" alt="Imagen del producto" class="w-full object-contain p-4">
+    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden max-w-full max-h-full flex items-center justify-center">
+        <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-10">&times;</button>
+        <img id="modalImage" src="" alt="Imagen del producto" class="max-w-full max-h-screen object-contain">
     </div>
 </div>
 
@@ -188,3 +188,4 @@
     }
 </style>
 @endsection
+    

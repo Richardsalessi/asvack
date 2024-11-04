@@ -4,7 +4,7 @@
 <div class="container mx-auto p-4 max-w-3xl h-screen bg-white dark:bg-gray-800 shadow rounded-lg overflow-y-auto">
     <h1 class="text-3xl font-semibold text-gray-800 dark:text-white mb-4">Editar Producto</h1>
 
-    <form action="{{ route('admin.productos.update', $producto->id) }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('provider.productos.update', $producto->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -32,15 +32,11 @@
             </select>
         </div>
 
-        <!-- Campo de Stock -->
         <div class="mb-4">
             <label for="stock" class="block text-gray-700 dark:text-gray-200 mb-1">Stock:</label>
-            <input type="number" name="stock" id="stock" value="{{ $producto->stock }}" 
-                   class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-                   required min="0" oninput="this.value = Math.max(this.value, 0)">
+            <input type="number" name="stock" id="stock" value="{{ $producto->stock }}" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required min="0" oninput="this.value = Math.max(this.value, 0)">
         </div>
 
-        <!-- Campo de Contacto de WhatsApp -->
         <div class="mb-4">
             <label for="contacto_whatsapp" class="block text-gray-700 dark:text-gray-200 mb-1">Contacto de WhatsApp:</label>
             <div class="flex">
@@ -49,7 +45,6 @@
             </div>
         </div>
 
-        <!-- Sección para imágenes ya subidas y nuevas imágenes -->
         <div class="mb-4">
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Imágenes:</label>
             <div class="flex flex-wrap gap-4 items-center" id="imagenes-container">
@@ -80,7 +75,7 @@
             <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">
                 Actualizar Producto
             </button>
-            <a href="{{ route('admin.productos.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">
+            <a href="{{ route('provider.productos.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">
                 Cancelar
             </a>
         </div>
@@ -91,9 +86,8 @@
     &#8679;
 </a>
 
-<!-- Modal para mostrar la imagen ampliada -->
 <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50 hidden no-select">
-    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden max-w-full max-h-full flex items-center justify-center">
+    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden p-4 max-w-full max-h-full flex items-center justify-center">
         <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-10">&times;</button>
         <img id="modalImage" src="" alt="Imagen del producto" class="max-w-full max-h-screen object-contain">
     </div>
@@ -161,7 +155,7 @@
                     });
 
                     const fileName = document.createElement('span');
-                    fileName.classList.add('text-xs', 'text-center', 'text-gray-600', 'dark:text-gray-300', 'mt-0');
+                    fileName.classList.add('text-xs', 'text-center', 'text-gray-600', 'dark:text-gray-300');
                     fileName.innerText = file.name;
 
                     const deleteButton = document.createElement('button');

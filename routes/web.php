@@ -4,10 +4,11 @@ use App\Http\Controllers\Admin\ProveedorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\Provider\ProveedorProductoController;
 use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 
-// Página principal accesible para todos, tanto autenticados como anónimos
+// Página principal accesible para todos
 Route::get('/', function () {
     $productosAleatorios = Producto::inRandomOrder()->take(6)->with('imagenes', 'categoria', 'creador')->get();
     return view('welcome', compact('productosAleatorios'));
@@ -35,6 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.update.password');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
@@ -63,10 +65,10 @@ Route::middleware(['auth', 'can:admin-access'])->group(function () {
             'destroy' => 'admin.productos.destroy',
         ]);
 
-    // CRUD de proveedores, solo para administrador, incluyendo edit y update
+    // CRUD de proveedores, solo para administrador
     Route::resource('admin/proveedores', ProveedorController::class)
         ->except(['show'])
-        ->parameters(['proveedores' => 'proveedor']) // Especificar el parámetro como "proveedor"
+        ->parameters(['proveedores' => 'proveedor'])
         ->names([
             'index' => 'admin.proveedores.index',
             'create' => 'admin.proveedores.create',
@@ -74,6 +76,24 @@ Route::middleware(['auth', 'can:admin-access'])->group(function () {
             'edit' => 'admin.proveedores.edit',
             'update' => 'admin.proveedores.update',
             'destroy' => 'admin.proveedores.destroy',
+        ]);
+});
+
+// Rutas protegidas para el proveedor
+Route::middleware(['auth', 'can:provider-access'])->prefix('provider')->name('provider.')->group(function () {
+    // Ruta para ver y gestionar categorías por el proveedor
+    Route::get('categorias', [CategoriaController::class, 'index'])->name('categorias.index');
+
+    // CRUD de productos solo para el proveedor autenticado
+    Route::resource('productos', ProveedorProductoController::class)
+        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
+        ->names([
+            'index' => 'productos.index',
+            'create' => 'productos.create',
+            'store' => 'productos.store',
+            'edit' => 'productos.edit',
+            'update' => 'productos.update',
+            'destroy' => 'productos.destroy',
         ]);
 });
 

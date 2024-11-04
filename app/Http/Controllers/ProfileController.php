@@ -6,6 +6,7 @@ use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
@@ -26,13 +27,23 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Actualizar el nombre y el email con validación
+        $user->fill($request->validated());
+
+        // Si el campo de la contraseña está lleno, actualizarla
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->input('password'));
         }
 
-        $request->user()->save();
+        // Si el email fue cambiado, restablecer la verificación
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        // Guardar el usuario con los cambios
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

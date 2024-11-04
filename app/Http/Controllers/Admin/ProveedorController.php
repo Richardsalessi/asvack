@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class ProveedorController extends Controller
 {
@@ -22,21 +23,35 @@ class ProveedorController extends Controller
 
     public function store(Request $request)
     {
+        // Validación de datos
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $proveedor = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-        ]);
+        try {
+            // Crear el usuario proveedor
+            $proveedor = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
 
-        $proveedor->assignRole('provider');
+            // Asignar el rol 'provider' al usuario
+            if ($proveedor) {
+                $proveedor->assignRole('provider');
+            }
 
-        return redirect()->route('admin.proveedores.index')->with('success', 'Proveedor creado con éxito.');
+            // Log para confirmar que el usuario y el rol se asignaron
+            Log::info("Proveedor creado: {$proveedor->name} con rol de proveedor");
+
+            return redirect()->route('admin.proveedores.index')->with('success', 'Proveedor creado con éxito.');
+        } catch (\Exception $e) {
+            // Log de error en caso de fallo
+            Log::error("Error al crear proveedor: " . $e->getMessage());
+            return redirect()->back()->withErrors(['error' => 'Hubo un problema al crear el proveedor.']);
+        }
     }
 
     public function edit(User $proveedor)

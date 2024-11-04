@@ -3,18 +3,36 @@
 @section('content')
 <div class="container mx-auto py-8">
     <h1 class="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Editar Proveedor</h1>
+    
     <form action="{{ route('admin.proveedores.update', $proveedor) }}" method="POST" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
         @csrf
         @method('PUT')
-        
+
+        <!-- Mensajes de error globales -->
+        @if ($errors->any())
+            <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <div class="mb-4">
             <label for="name" class="block text-gray-700 dark:text-gray-300 font-bold mb-2">Nombre</label>
             <input type="text" name="name" id="name" value="{{ $proveedor->name }}" class="w-full px-4 py-2 border rounded-lg text-gray-900 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            @error('name')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label for="email" class="block text-gray-700 dark:text-gray-300 font-bold mb-2">Email</label>
             <input type="email" name="email" id="email" value="{{ $proveedor->email }}" class="w-full px-4 py-2 border rounded-lg text-gray-900 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            @error('email')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="mb-4 relative">
@@ -24,12 +42,18 @@
                 <button type="button" onclick="togglePasswordVisibility('password', 'toggleIcon')" class="absolute inset-y-0 right-3 flex items-center text-gray-600 dark:text-gray-300">
                     <i id="toggleIcon" class="fas fa-eye"></i>
                 </button>
+                @error('password')
+                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
             </div>
         </div>
 
         <div class="mb-4">
             <label for="password_confirmation" class="block text-gray-700 dark:text-gray-300 font-bold mb-2">Confirmar Contraseña</label>
             <input type="password" name="password_confirmation" id="password_confirmation" class="w-full px-4 py-2 border rounded-lg text-gray-900 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            @error('password_confirmation')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="flex justify-end gap-4">

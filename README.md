@@ -1,7 +1,8 @@
 Bienvenido al proyecto Asvack
 
 ## Requisitos
-Ultima version de php, xampp y composer
+Ultima version de php, xampp, composer y 7-zip
+https://www.7-zip.org/download.html
 
 
 ## Instalación

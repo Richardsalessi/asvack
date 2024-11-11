@@ -68,10 +68,14 @@
                 <p class="text-gray-900 dark:text-white mb-2"><strong>Proveedor:</strong> {{ $producto->creador ? $producto->creador->name : 'Sin proveedor' }}</p>
                 
                 @if ($producto->contacto_whatsapp)
-                    <p class="mb-4">
-                        <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">Contacto por WhatsApp</a>
-                    </p>
-                @endif
+            <p class="mb-4">
+                <a href="https://wa.me/{{ $producto->contacto_whatsapp }}?text={{ urlencode('Hola, necesito saber más sobre este producto: ' . $producto->nombre . '. Especificaciones: ' . $producto->descripcion . '. Precio: $' . number_format($producto->precio, 0, ',', '.') . '. Unidades disponibles: ' . $producto->stock . '. Proveedor: ' . ($producto->creador ? $producto->creador->name : 'Sin proveedor')) }}"
+                    target="_blank" 
+                    class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">
+                    Contacto por WhatsApp
+                </a>
+            </p>
+        @endif
             </div>
         @empty
             <p class="text-center text-gray-700 dark:text-gray-300">No hay productos disponibles en esta categoría.</p>

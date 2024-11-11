@@ -9,45 +9,65 @@
 
         <div class="mb-4">
             <label for="nombre" class="block text-gray-700 dark:text-gray-200 mb-1">Nombre del Producto:</label>
-            <input type="text" name="nombre" id="nombre" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+            <input type="text" name="nombre" id="nombre" value="{{ old('nombre') }}" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+            @error('nombre')
+                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label for="descripcion" class="block text-gray-700 dark:text-gray-200 mb-1">Descripción:</label>
-            <textarea name="descripcion" id="descripcion" rows="3" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none" required></textarea>
+            <textarea name="descripcion" id="descripcion" rows="3" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none" required>{{ old('descripcion') }}</textarea>
+            @error('descripcion')
+                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label for="precio" class="block text-gray-700 dark:text-gray-200 mb-1">Precio:</label>
-            <input type="text" name="precio" id="precio" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required autocomplete="off">
+            <input type="text" name="precio" id="precio" value="{{ old('precio') }}" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required autocomplete="off">
+            @error('precio')
+                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label for="categoria_id" class="block text-gray-700 dark:text-gray-200 mb-1">Categoría:</label>
             <select name="categoria_id" id="categoria_id" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
                 @foreach($categorias as $categoria)
-                    <option value="{{ $categoria->id }}">{{ $categoria->nombre }}</option>
+                    <option value="{{ $categoria->id }}" {{ old('categoria_id') == $categoria->id ? 'selected' : '' }}>{{ $categoria->nombre }}</option>
                 @endforeach
             </select>
+            @error('categoria_id')
+                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label for="stock" class="block text-gray-700 dark:text-gray-200 mb-1">Stock:</label>
-            <input type="number" name="stock" id="stock" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required min="0" oninput="this.value = Math.max(this.value, 0)">
+            <input type="number" name="stock" id="stock" value="{{ old('stock') }}" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required min="0" oninput="this.value = Math.max(this.value, 0)">
+            @error('stock')
+                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
+            @enderror
         </div>
 
-        <!-- Campo de Contacto de WhatsApp con prefijo de Colombia -->
         <div class="mb-4">
             <label for="contacto_whatsapp" class="block text-gray-700 dark:text-gray-200 mb-1">Contacto de WhatsApp:</label>
             <div class="flex">
                 <span class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-l-lg text-gray-700 dark:text-gray-200 border border-r-0 border-gray-300 dark:border-gray-600">+57</span>
-                <input type="text" name="contacto_whatsapp" id="contacto_whatsapp" class="w-full p-2 border rounded-r-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required placeholder="Número sin el prefijo +57">
+                <input type="text" name="contacto_whatsapp" id="contacto_whatsapp" value="{{ old('contacto_whatsapp') }}" class="w-full p-2 border rounded-r-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required placeholder="Número sin el prefijo +57">
             </div>
+            @error('contacto_whatsapp')
+                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Imágenes:</label>
             <div class="flex flex-wrap gap-4 items-center" id="preview-imagenes"></div>
+            @error('imagenes')
+                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="flex gap-4 items-center mb-6">
@@ -188,4 +208,3 @@
     }
 </style>
 @endsection
-    

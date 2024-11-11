@@ -11,16 +11,25 @@
         <div class="mb-4">
             <label for="nombre" class="block text-gray-700 dark:text-gray-200 mb-1">Nombre del Producto:</label>
             <input type="text" name="nombre" id="nombre" value="{{ $producto->nombre }}" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+            @error('nombre')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label for="descripcion" class="block text-gray-700 dark:text-gray-200 mb-1">Descripción:</label>
             <textarea name="descripcion" id="descripcion" rows="3" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none" required>{{ $producto->descripcion }}</textarea>
+            @error('descripcion')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label for="precio" class="block text-gray-700 dark:text-gray-200 mb-1">Precio:</label>
             <input type="text" name="precio" id="precio" value="{{ number_format($producto->precio, 0, ',', '.') }}" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required autocomplete="off">
+            @error('precio')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
+            @enderror
         </div>
 
         <div class="mb-4">
@@ -30,11 +39,17 @@
                     <option value="{{ $categoria->id }}" {{ $producto->categoria_id == $categoria->id ? 'selected' : '' }}>{{ $categoria->nombre }}</option>
                 @endforeach
             </select>
+            @error('categoria_id')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label for="stock" class="block text-gray-700 dark:text-gray-200 mb-1">Stock:</label>
             <input type="number" name="stock" id="stock" value="{{ $producto->stock }}" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required min="0" oninput="this.value = Math.max(this.value, 0)">
+            @error('stock')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
+            @enderror
         </div>
 
         <div class="mb-4">
@@ -43,6 +58,9 @@
                 <span class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-l-lg text-gray-700 dark:text-gray-200 border border-r-0 border-gray-300 dark:border-gray-600">+57</span>
                 <input type="text" name="contacto_whatsapp" id="contacto_whatsapp" value="{{ str_replace('+57', '', $producto->contacto_whatsapp) }}" class="w-full p-2 border rounded-r-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
             </div>
+            @error('contacto_whatsapp')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
+            @enderror
         </div>
 
         <div class="mb-4">
@@ -62,6 +80,9 @@
                 @endforeach
                 <div class="flex gap-4 items-center" id="preview-imagenes"></div>
             </div>
+            @error('imagenes')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
+            @enderror
         </div>
 
         <div class="flex gap-4 items-center mb-6">

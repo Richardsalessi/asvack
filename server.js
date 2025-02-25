@@ -9,19 +9,20 @@ const app = express();
 // Middlewares
 app.use(cors());
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true })); // Importante para manejar formularios
 
 // Importar rutas
 const productosRoutes = require('./routes/productosRoutes');
 const usuariosRoutes = require('./routes/usuariosRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
-const carritoRoutes = require('./routes/carritoRoutes'); // Rutas del carrito
+const carritoRoutes = require('./routes/carritoRoutes');
+const comprasRoutes = require('./routes/comprasRoutes'); // Se agregó la ruta de compras
 
 // Usar rutas
 app.use('/api/productos', productosRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/categorias', categoriasRoutes);
-app.use('/api/carrito', carritoRoutes); // Se agregó la ruta del carrito
+app.use('/api/carrito', carritoRoutes);
+app.use('/api/compras', comprasRoutes); // Se agregó la ruta de compras
 
 // Ruta principal
 app.get('/', (req, res) => {

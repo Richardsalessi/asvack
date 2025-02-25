@@ -26,24 +26,26 @@ const obtenerProductoPorId = async (req, res) => {
     }
 };
 
-// Crear un producto
+// Crear un producto con imagen o video
 const crearProducto = async (req, res) => {
     try {
         const { nombre, precio, stock } = req.body;
+        const archivo = req.file ? `/uploads/${req.file.filename}` : null;
 
         if (!nombre || !precio || !stock) {
             return res.status(400).json({ error: 'Todos los campos son obligatorios' });
         }
 
-        await pool.query('INSERT INTO productos (nombre, precio, stock) VALUES (?, ?, ?)', [nombre, precio, stock]);
+        await pool.query('INSERT INTO productos (nombre, precio, stock, archivo) VALUES (?, ?, ?, ?)', 
+            [nombre, precio, stock, archivo]);
 
-        res.json({ mensaje: 'Producto agregado con éxito' });
+        res.json({ mensaje: 'Producto agregado con éxito', archivo });
     } catch (error) {
         res.status(500).json({ error: 'Error al agregar producto' });
     }
 };
 
-// Editar un producto por ID
+// Editar un producto
 const editarProducto = async (req, res) => {
     try {
         const { id } = req.params;
@@ -64,7 +66,7 @@ const editarProducto = async (req, res) => {
     }
 };
 
-// Eliminar un producto por ID
+// Eliminar un producto
 const eliminarProducto = async (req, res) => {
     try {
         const { id } = req.params;

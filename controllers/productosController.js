@@ -26,18 +26,18 @@ const obtenerProductoPorId = async (req, res) => {
     }
 };
 
-// Crear un producto con imagen o video
+// Crear un producto con imagen
 const crearProducto = async (req, res) => {
     try {
-        const { nombre, precio, stock } = req.body;
+        const { nombre, descripcion, precio, stock, categoria_id } = req.body;
         const archivo = req.file ? `/uploads/${req.file.filename}` : null;
 
-        if (!nombre || !precio || !stock) {
+        if (!nombre || !precio || !stock || !categoria_id) {
             return res.status(400).json({ error: 'Todos los campos son obligatorios' });
         }
 
-        await pool.query('INSERT INTO productos (nombre, precio, stock, archivo) VALUES (?, ?, ?, ?)', 
-            [nombre, precio, stock, archivo]);
+        await pool.query('INSERT INTO productos (nombre, descripcion, precio, stock, categoria_id, archivo) VALUES (?, ?, ?, ?, ?, ?)', 
+            [nombre, descripcion, precio, stock, categoria_id, archivo]);
 
         res.json({ mensaje: 'Producto agregado con éxito', archivo });
     } catch (error) {
@@ -49,11 +49,11 @@ const crearProducto = async (req, res) => {
 const editarProducto = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, precio, stock } = req.body;
+        const { nombre, descripcion, precio, stock, categoria_id } = req.body;
 
         const [result] = await pool.query(
-            'UPDATE productos SET nombre = ?, precio = ?, stock = ? WHERE id = ?',
-            [nombre, precio, stock, id]
+            'UPDATE productos SET nombre = ?, descripcion = ?, precio = ?, stock = ?, categoria_id = ? WHERE id = ?',
+            [nombre, descripcion, precio, stock, categoria_id, id]
         );
 
         if (result.affectedRows === 0) {

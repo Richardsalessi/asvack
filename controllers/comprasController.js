@@ -24,7 +24,12 @@ const obtenerDetalleCompra = async (req, res) => {
         }
 
         // Obtener detalles de los productos comprados
-        const [detalles] = await pool.query('SELECT * FROM detalles_compra WHERE compra_id = ?', [id]);
+        const [detalles] = await pool.query(`
+            SELECT d.producto_id, p.nombre, d.cantidad, d.precio, d.subtotal 
+            FROM detalles_compra d
+            INNER JOIN productos p ON d.producto_id = p.id
+            WHERE d.compra_id = ?
+        `, [id]);
 
         res.json({ compra: compra[0], detalles });
     } catch (error) {
@@ -39,7 +44,10 @@ const crearCompra = async (req, res) => {
 
         // Obtener productos en el carrito del usuario
         const [carrito] = await pool.query(
-            'SELECT c.producto_id, c.cantidad, p.precio FROM carrito c INNER JOIN productos p ON c.producto_id = p.id WHERE c.usuario_id = ?',
+            `SELECT c.producto_id, c.cantidad, p.precio, p.stock 
+            FROM carrito c 
+            INNER JOIN productos p ON c.producto_id = p.id 
+            WHERE c.usuario_id = ?`,
             [usuario_id]
         );
 
@@ -47,25 +55,37 @@ const crearCompra = async (req, res) => {
             return res.status(400).json({ error: 'El carrito está vacío' });
         }
 
-        // Calcular el total de la compra
-        const total = carrito.reduce((sum, item) => sum + item.cantidad * item.precio, 0);
+        let total = 0;
 
-        // Crear la compra en la base de datos
+        // Verificar stock antes de procesar la compra
+        for (const item of carrito) {
+            if (item.stock < item.cantidad) {
+                return res.status(400).json({ error: `Stock insuficiente para el producto ID ${item.producto_id}` });
+            }
+            total += item.cantidad * item.precio;
+        }
+
+        // Crear la compra
         const [compraResult] = await pool.query(
             'INSERT INTO compras (usuario_id, total) VALUES (?, ?)',
             [usuario_id, total]
         );
         const compra_id = compraResult.insertId;
 
-        // Insertar cada producto en la tabla detalles_compra
+        // Insertar en detalles_compra y actualizar stock
         for (const item of carrito) {
             await pool.query(
-                'INSERT INTO detalles_compra (compra_id, producto_id, cantidad, precio) VALUES (?, ?, ?, ?)',
-                [compra_id, item.producto_id, item.cantidad, item.precio]
+                'INSERT INTO detalles_compra (compra_id, producto_id, cantidad, precio, subtotal) VALUES (?, ?, ?, ?, ?)',
+                [compra_id, item.producto_id, item.cantidad, item.precio, item.cantidad * item.precio]
+            );
+
+            await pool.query(
+                'UPDATE productos SET stock = stock - ? WHERE id = ?',
+                [item.cantidad, item.producto_id]
             );
         }
 
-        // Vaciar el carrito después de la compra
+        // Vaciar el carrito
         await pool.query('DELETE FROM carrito WHERE usuario_id = ?', [usuario_id]);
 
         res.json({ mensaje: 'Compra realizada con éxito', compra_id, total });
@@ -74,7 +94,7 @@ const crearCompra = async (req, res) => {
     }
 };
 
-// Eliminar una compra (y sus detalles por ON DELETE CASCADE)
+// Eliminar una compra
 const eliminarCompra = async (req, res) => {
     try {
         const { id } = req.params;

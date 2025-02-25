@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { io } = require('../socket'); // Importamos `io` desde socket.js
 
 // Obtener todas las compras del usuario autenticado
 const obtenerCompras = async (req, res) => {
@@ -87,6 +88,9 @@ const crearCompra = async (req, res) => {
 
         // Vaciar el carrito
         await pool.query('DELETE FROM carrito WHERE usuario_id = ?', [usuario_id]);
+
+        // 🔴 Emitir evento de compra realizada en `Socket.io`
+        io.emit('nueva_compra', { compra_id, usuario_id, total });
 
         res.json({ mensaje: 'Compra realizada con éxito', compra_id, total });
     } catch (error) {

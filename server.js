@@ -14,6 +14,7 @@ const usuariosRoutes = require('./routes/usuariosRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
 const carritoRoutes = require('./routes/carritoRoutes');
 const comprasRoutes = require('./routes/comprasRoutes');
+const logsRoutes = require('./routes/logsRoutes'); // 🔥 Nueva ruta para logs
 
 // Usar rutas
 app.use('/api/productos', productosRoutes);
@@ -21,6 +22,7 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/carrito', carritoRoutes);
 app.use('/api/compras', comprasRoutes);
+app.use('/api/logs', logsRoutes); // 🔥 Ruta para ver logs
 
 // Ruta para probar conexión a la base de datos
 app.get('/test-db', async (req, res) => {

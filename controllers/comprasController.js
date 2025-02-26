@@ -1,30 +1,49 @@
 const pool = require('../config/db');
 const { io } = require('../socket'); // Importamos `io` desde socket.js
 
-// Obtener todas las compras del usuario autenticado
+// Obtener compras (Cliente solo ve las suyas, Admin ve todas)
 const obtenerCompras = async (req, res) => {
     try {
-        const usuario_id = req.usuario.id;
-        const [compras] = await pool.query('SELECT * FROM compras WHERE usuario_id = ?', [usuario_id]);
+        const usuario = req.usuario;
+        let query;
+        let params = [];
+
+        if (usuario.rol === 'admin') {
+            // Admin puede ver todas las compras
+            query = 'SELECT * FROM compras';
+        } else {
+            // Cliente solo ve sus compras
+            query = 'SELECT * FROM compras WHERE usuario_id = ?';
+            params.push(usuario.id);
+        }
+
+        const [compras] = await pool.query(query, params);
         res.json(compras);
     } catch (error) {
+        console.error('❌ Error al obtener compras:', error);
         res.status(500).json({ error: 'Error al obtener compras' });
     }
 };
 
-// Obtener detalles de una compra específica
+// Obtener detalles de una compra específica (Cliente solo ve las suyas)
 const obtenerDetalleCompra = async (req, res) => {
     try {
         const { id } = req.params;
-        const usuario_id = req.usuario.id;
+        const usuario = req.usuario;
 
-        // Verificar que la compra le pertenece al usuario
-        const [compra] = await pool.query('SELECT * FROM compras WHERE id = ? AND usuario_id = ?', [id, usuario_id]);
+        let query = 'SELECT * FROM compras WHERE id = ?';
+        let params = [id];
+
+        if (usuario.rol !== 'admin') {
+            query += ' AND usuario_id = ?';
+            params.push(usuario.id);
+        }
+
+        const [compra] = await pool.query(query, params);
         if (compra.length === 0) {
             return res.status(404).json({ error: 'Compra no encontrada' });
         }
 
-        // Obtener detalles de los productos comprados
         const [detalles] = await pool.query(`
             SELECT d.producto_id, p.nombre, d.cantidad, d.precio, d.subtotal 
             FROM detalles_compra d
@@ -34,6 +53,7 @@ const obtenerDetalleCompra = async (req, res) => {
 
         res.json({ compra: compra[0], detalles });
     } catch (error) {
+        console.error('❌ Error al obtener detalles de la compra:', error);
         res.status(500).json({ error: 'Error al obtener los detalles de la compra' });
     }
 };
@@ -43,7 +63,6 @@ const crearCompra = async (req, res) => {
     try {
         const usuario_id = req.usuario.id;
 
-        // Obtener productos en el carrito del usuario
         const [carrito] = await pool.query(
             `SELECT c.producto_id, c.cantidad, p.precio, p.stock 
             FROM carrito c 
@@ -89,23 +108,31 @@ const crearCompra = async (req, res) => {
         // Vaciar el carrito
         await pool.query('DELETE FROM carrito WHERE usuario_id = ?', [usuario_id]);
 
-        // 🔴 Emitir evento de compra realizada en `Socket.io`
+        // Emitir evento de compra realizada en `Socket.io`
         io.emit('nueva_compra', { compra_id, usuario_id, total });
 
         res.json({ mensaje: 'Compra realizada con éxito', compra_id, total });
     } catch (error) {
+        console.error('❌ Error al procesar la compra:', error);
         res.status(500).json({ error: 'Error al procesar la compra' });
     }
 };
 
-// Eliminar una compra
+// Eliminar una compra (Solo el dueño o admin pueden eliminar)
 const eliminarCompra = async (req, res) => {
     try {
         const { id } = req.params;
-        const usuario_id = req.usuario.id;
+        const usuario = req.usuario;
 
-        // Verificar que la compra le pertenece al usuario
-        const [result] = await pool.query('DELETE FROM compras WHERE id = ? AND usuario_id = ?', [id, usuario_id]);
+        let query = 'DELETE FROM compras WHERE id = ?';
+        let params = [id];
+
+        if (usuario.rol !== 'admin') {
+            query += ' AND usuario_id = ?';
+            params.push(usuario.id);
+        }
+
+        const [result] = await pool.query(query, params);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Compra no encontrada' });
@@ -113,6 +140,7 @@ const eliminarCompra = async (req, res) => {
 
         res.json({ mensaje: 'Compra eliminada con éxito' });
     } catch (error) {
+        console.error('❌ Error al eliminar la compra:', error);
         res.status(500).json({ error: 'Error al eliminar la compra' });
     }
 };

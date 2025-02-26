@@ -2,26 +2,38 @@ const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+// Registrar usuario (cliente por defecto)
 const registrarUsuario = async (req, res) => {
     try {
         const { nombre, email, password } = req.body;
 
         console.log('Intentando registrar usuario:', { nombre, email });
 
-        // Hashear la contraseña
+        // Verificar si el usuario ya existe
+        const [usuarioExistente] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+        if (usuarioExistente.length > 0) {
+            return res.status(400).json({ success: false, error: 'El email ya está registrado' });
+        }
+
+        // Encriptar la contraseña antes de guardarla
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insertar en la base de datos
-        await pool.query('INSERT INTO usuarios (nombre, email, password) VALUES (?, ?, ?)', [nombre, email, hashedPassword]);
+        // Insertar nuevo usuario como cliente por defecto
+        await pool.query(
+            'INSERT INTO usuarios (nombre, email, password, rol, created_at) VALUES (?, ?, ?, "cliente", NOW())',
+            [nombre, email, hashedPassword]
+        );
 
         console.log('Usuario registrado con éxito:', email);
-        res.json({ mensaje: 'Usuario registrado con éxito' });
+        res.json({ success: true, mensaje: 'Usuario registrado correctamente' });
+
     } catch (error) {
         console.error('Error al registrar usuario:', error);
-        res.status(500).json({ error: 'Error al registrar usuario', detalle: error.message });
+        res.status(500).json({ success: false, error: 'Error al registrar usuario' });
     }
 };
 
+// Iniciar sesión y generar token JWT
 const iniciarSesion = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -31,11 +43,8 @@ const iniciarSesion = async (req, res) => {
         // Buscar usuario en la base de datos
         const [rows] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
 
-        console.log('Resultado de la consulta:', rows);
-
         // Verificar si el usuario existe
         if (!rows || rows.length === 0) {
-            console.log('Usuario no encontrado:', email);
             return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
@@ -43,23 +52,117 @@ const iniciarSesion = async (req, res) => {
 
         // Comparar contraseñas
         const match = await bcrypt.compare(password, usuario.password);
-        console.log('Comparación de contraseñas:', match);
-
         if (!match) {
-            console.log('Contraseña incorrecta para:', email);
             return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
-        // Generar token JWT
-        const token = jwt.sign({ id: usuario.id, email: usuario.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // Generar token JWT con el rol del usuario
+        const token = jwt.sign(
+            { id: usuario.id, email: usuario.email, rol: usuario.rol }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '1h' }
+        );
 
         console.log('Inicio de sesión exitoso:', email);
         res.json({ token });
 
     } catch (error) {
         console.error('Error en el inicio de sesión:', error);
-        res.status(500).json({ error: 'Error en el inicio de sesión', detalle: error.message });
+        res.status(500).json({ error: 'Error en el inicio de sesión' });
     }
 };
 
-module.exports = { registrarUsuario, iniciarSesion };
+// Crear usuario con rol (Solo Admin puede crear Admins o Trabajadores)
+const crearUsuarioConRol = async (req, res) => {
+    try {
+        const { nombre, email, password, rol } = req.body;
+        const usuarioAdmin = req.usuario; // Usuario autenticado que hace la petición
+
+        // Verificar si el usuario autenticado es admin
+        if (usuarioAdmin.rol !== 'admin') {
+            return res.status(403).json({ success: false, error: 'No tienes permisos para crear este usuario' });
+        }
+
+        // Verificar si el rol es válido (solo admin o trabajador)
+        if (!['admin', 'trabajador'].includes(rol)) {
+            return res.status(400).json({ success: false, error: 'Rol inválido' });
+        }
+
+        // Verificar si el email ya está registrado
+        const [usuarioExistente] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+        if (usuarioExistente.length > 0) {
+            return res.status(400).json({ success: false, error: 'El email ya está en uso' });
+        }
+
+        // Encriptar la contraseña
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Insertar usuario con el rol especificado
+        await pool.query(
+            'INSERT INTO usuarios (nombre, email, password, rol, created_at) VALUES (?, ?, ?, ?, NOW())',
+            [nombre, email, hashedPassword, rol]
+        );
+
+        console.log(`Usuario ${rol} creado correctamente:`, email);
+        res.json({ success: true, mensaje: `Usuario ${rol} creado correctamente` });
+
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error al crear usuario' });
+    }
+};
+
+// Obtener lista de trabajadores (Solo Admin puede verlos)
+const obtenerTrabajadores = async (req, res) => {
+    try {
+        const usuarioAdmin = req.usuario;
+
+        // Verificar si el usuario autenticado es admin
+        if (usuarioAdmin.rol !== 'admin') {
+            return res.status(403).json({ success: false, error: 'No tienes permisos para ver trabajadores' });
+        }
+
+        // Obtener todos los usuarios con rol "trabajador"
+        const [trabajadores] = await pool.query('SELECT id, nombre, email, created_at FROM usuarios WHERE rol = "trabajador"');
+
+        res.json({ success: true, trabajadores });
+
+    } catch (error) {
+        console.error('Error al obtener trabajadores:', error);
+        res.status(500).json({ success: false, error: 'Error al obtener trabajadores' });
+    }
+};
+
+// Obtener lista de clientes (Solo Admin puede verlos)
+const obtenerClientes = async (req, res) => {
+    try {
+        const usuarioAdmin = req.usuario;
+
+        // Verificar si el usuario autenticado es admin
+        if (usuarioAdmin.rol !== 'admin') {
+            return res.status(403).json({ success: false, error: 'No tienes permisos para ver clientes' });
+        }
+
+        // Obtener todos los usuarios con rol "cliente"
+        const [clientes] = await pool.query('SELECT id, nombre, email, created_at FROM usuarios WHERE rol = "cliente"');
+
+        res.json({ success: true, clientes });
+
+    } catch (error) {
+        console.error('Error al obtener clientes:', error);
+        res.status(500).json({ success: false, error: 'Error al obtener clientes' });
+    }
+};
+
+// Proteger la ruta de cambio de rol (Evitar que alguien lo modifique manualmente)
+const cambiarRolUsuario = async (req, res) => {
+    return res.status(403).json({ success: false, error: 'No puedes cambiar tu rol manualmente' });
+};
+
+module.exports = {
+    registrarUsuario,
+    iniciarSesion,
+    crearUsuarioConRol,
+    cambiarRolUsuario,
+    obtenerTrabajadores,
+    obtenerClientes
+};

@@ -5,9 +5,9 @@ const jwt = require('jsonwebtoken');
 // Registrar usuario (cliente por defecto)
 const registrarUsuario = async (req, res) => {
     try {
-        const { nombre, email, password } = req.body;
+        const { nombre, email, telefono, password } = req.body;
 
-        console.log('Intentando registrar usuario:', { nombre, email });
+        console.log('Intentando registrar usuario:', { nombre, email, telefono });
 
         // Verificar si el usuario ya existe
         const [usuarioExistente] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email]);
@@ -20,8 +20,8 @@ const registrarUsuario = async (req, res) => {
 
         // Insertar nuevo usuario como cliente por defecto
         await pool.query(
-            'INSERT INTO usuarios (nombre, email, password, rol, created_at) VALUES (?, ?, ?, "cliente", NOW())',
-            [nombre, email, hashedPassword]
+            'INSERT INTO usuarios (nombre, email, telefono, password, rol, created_at) VALUES (?, ?, ?, ?, "cliente", NOW())',
+            [nombre, email, telefono, hashedPassword]
         );
 
         console.log('✅ Usuario registrado con éxito:', email);
@@ -57,7 +57,7 @@ const iniciarSesion = async (req, res) => {
 
         // Generar token JWT con el rol del usuario
         const token = jwt.sign(
-            { id: usuario.id, email: usuario.email, rol: usuario.rol }, 
+            { id: usuario.id, email: usuario.email, telefono: usuario.telefono, rol: usuario.rol }, 
             process.env.JWT_SECRET, 
             { expiresIn: '1h' }
         );
@@ -74,7 +74,7 @@ const iniciarSesion = async (req, res) => {
 // Crear usuario con rol (Solo Admin puede crear Admins o Trabajadores)
 const crearUsuarioConRol = async (req, res) => {
     try {
-        const { nombre, email, password, rol } = req.body;
+        const { nombre, email, telefono, password, rol } = req.body;
         const usuarioAdmin = req.usuario; // Usuario autenticado que hace la petición
 
         if (usuarioAdmin.rol !== 'admin') {
@@ -95,8 +95,8 @@ const crearUsuarioConRol = async (req, res) => {
 
         // Insertar usuario con el rol especificado
         await pool.query(
-            'INSERT INTO usuarios (nombre, email, password, rol, created_at) VALUES (?, ?, ?, ?, NOW())',
-            [nombre, email, hashedPassword, rol]
+            'INSERT INTO usuarios (nombre, email, telefono, password, rol, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+            [nombre, email, telefono, hashedPassword, rol]
         );
 
         console.log(`✅ Usuario ${rol} creado correctamente:`, email);
@@ -115,7 +115,9 @@ const obtenerTrabajadores = async (req, res) => {
             return res.status(403).json({ success: false, error: 'No tienes permisos para ver trabajadores' });
         }
 
-        const [trabajadores] = await pool.query('SELECT id, nombre, email, created_at FROM usuarios WHERE rol = "trabajador"');
+        const [trabajadores] = await pool.query(
+            'SELECT id, nombre, email, telefono, created_at FROM usuarios WHERE rol = "trabajador"'
+        );
 
         res.json({ success: true, trabajadores });
 
@@ -132,7 +134,9 @@ const obtenerClientes = async (req, res) => {
             return res.status(403).json({ success: false, error: 'No tienes permisos para ver clientes' });
         }
 
-        const [clientes] = await pool.query('SELECT id, nombre, email, created_at FROM usuarios WHERE rol = "cliente"');
+        const [clientes] = await pool.query(
+            'SELECT id, nombre, email, telefono, created_at FROM usuarios WHERE rol = "cliente"'
+        );
 
         res.json({ success: true, clientes });
 

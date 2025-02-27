@@ -12,6 +12,17 @@
         <form id="registerForm">
             <input type="text" id="registerNombre" placeholder="Nombre Completo" required>
             <input type="email" id="registerEmail" placeholder="Correo Electrónico" required>
+
+            <label for="registerPrefijo">Prefijo</label>
+            <select id="registerPrefijo" required>
+                <option value="+1">🇺🇸 +1 (EE.UU.)</option>
+                <option value="+57">🇨🇴 +57 (Colombia)</option>
+                <option value="+52">🇲🇽 +52 (México)</option>
+                <option value="+34">🇪🇸 +34 (España)</option>
+            </select>
+
+            <input type="text" id="registerTelefono" placeholder="Número de Teléfono" required>
+
             <input type="password" id="registerPassword" placeholder="Contraseña" required>
             <button type="submit">Registrarse</button>
         </form>

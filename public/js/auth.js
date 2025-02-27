@@ -29,12 +29,14 @@ document.addEventListener("DOMContentLoaded", () => {
           e.preventDefault();
           const nombre = document.getElementById("registerNombre").value;
           const email = document.getElementById("registerEmail").value;
+          const prefijo = document.getElementById("registerPrefijo").value;
+          const telefono = prefijo + " " + document.getElementById("registerTelefono").value;
           const password = document.getElementById("registerPassword").value;
 
           const response = await fetch("/api/usuarios/registro", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ nombre, email, password }),
+              body: JSON.stringify({ nombre, email, telefono, password }),
           });
 
           const data = await response.json();

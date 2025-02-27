@@ -5,9 +5,9 @@ const jwt = require('jsonwebtoken');
 // Registrar usuario (cliente por defecto)
 const registrarUsuario = async (req, res) => {
     try {
-        const { nombre, email, telefono, password } = req.body;
+        const { nombre, email, prefijo, telefono, password } = req.body;
 
-        console.log('Intentando registrar usuario:', { nombre, email, telefono });
+        console.log('Intentando registrar usuario:', { nombre, email, prefijo, telefono });
 
         // Verificar si el usuario ya existe
         const [usuarioExistente] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email]);
@@ -15,13 +15,16 @@ const registrarUsuario = async (req, res) => {
             return res.status(400).json({ success: false, error: 'El email ya está registrado' });
         }
 
+        // Concatenar el prefijo con el número de teléfono
+        const telefonoCompleto = `${prefijo} ${telefono}`;
+
         // Encriptar la contraseña antes de guardarla
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Insertar nuevo usuario como cliente por defecto
         await pool.query(
             'INSERT INTO usuarios (nombre, email, telefono, password, rol, created_at) VALUES (?, ?, ?, ?, "cliente", NOW())',
-            [nombre, email, telefono, hashedPassword]
+            [nombre, email, telefonoCompleto, hashedPassword]
         );
 
         console.log('✅ Usuario registrado con éxito:', email);
@@ -55,7 +58,7 @@ const iniciarSesion = async (req, res) => {
             return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
-        // Generar token JWT con el rol del usuario
+        // Generar token JWT con los datos del usuario
         const token = jwt.sign(
             { id: usuario.id, email: usuario.email, telefono: usuario.telefono, rol: usuario.rol }, 
             process.env.JWT_SECRET, 
@@ -71,10 +74,31 @@ const iniciarSesion = async (req, res) => {
     }
 };
 
+// Obtener perfil del usuario autenticado
+const obtenerPerfil = async (req, res) => {
+    try {
+        const usuario_id = req.usuario.id;
+        const [usuario] = await pool.query(
+            'SELECT id, nombre, email, telefono, rol, created_at FROM usuarios WHERE id = ?',
+            [usuario_id]
+        );
+
+        if (usuario.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        res.json(usuario[0]); // Retorna la información del usuario
+
+    } catch (error) {
+        console.error('❌ Error al obtener el perfil:', error);
+        res.status(500).json({ error: 'Error al obtener el perfil' });
+    }
+};
+
 // Crear usuario con rol (Solo Admin puede crear Admins o Trabajadores)
 const crearUsuarioConRol = async (req, res) => {
     try {
-        const { nombre, email, telefono, password, rol } = req.body;
+        const { nombre, email, prefijo, telefono, password, rol } = req.body;
         const usuarioAdmin = req.usuario; // Usuario autenticado que hace la petición
 
         if (usuarioAdmin.rol !== 'admin') {
@@ -92,11 +116,12 @@ const crearUsuarioConRol = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+        const telefonoCompleto = `${prefijo} ${telefono}`;
 
         // Insertar usuario con el rol especificado
         await pool.query(
             'INSERT INTO usuarios (nombre, email, telefono, password, rol, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-            [nombre, email, telefono, hashedPassword, rol]
+            [nombre, email, telefonoCompleto, hashedPassword, rol]
         );
 
         console.log(`✅ Usuario ${rol} creado correctamente:`, email);
@@ -175,6 +200,7 @@ const cambiarRolUsuario = async (req, res) => {
 module.exports = {
     registrarUsuario,
     iniciarSesion,
+    obtenerPerfil,
     crearUsuarioConRol,
     cambiarRolUsuario,
     obtenerTrabajadores,

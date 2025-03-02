@@ -55,17 +55,16 @@
                 
                 <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg"><strong>Precio:</strong> ${{ number_format($producto->precio, 0, ',', '.') }}</p>
                 <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> {{ $producto->stock }}</p>
-                <p class="text-gray-900 dark:text-white mb-2"><strong>Proveedor:</strong> {{ $producto->creador ? $producto->creador->name : 'Sin proveedor' }}</p>
                 
-            @if ($producto->contacto_whatsapp)
-            <p class="mb-4">
-                <a href="https://wa.me/{{ $producto->contacto_whatsapp }}?text={{ urlencode('Hola, necesito saber más sobre este producto: ' . $producto->nombre . '. Especificaciones: ' . $producto->descripcion . '. Precio: $' . number_format($producto->precio, 0, ',', '.') . '. Unidades disponibles: ' . $producto->stock . '. Proveedor: ' . ($producto->creador ? $producto->creador->name : 'Sin proveedor')) }}"
-                    target="_blank" 
-                    class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">
-                    Contacto por WhatsApp
-                </a>
-            </p>
-        @endif
+                <!-- Formulario de agregar al carrito con cantidad -->
+                <form action="{{ route('carrito.agregar', $producto->id) }}" method="POST" id="add-to-cart-form-{{ $producto->id }}">
+                    @csrf
+                    <label for="cantidad" class="block text-sm font-semibold text-gray-900 dark:text-white">Cantidad</label>
+                    <input type="number" id="cantidad" name="cantidad" value="1" min="1" max="{{ $producto->stock }}" class="w-16 p-2 border rounded-md text-center" required>
+                    <button type="submit" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
+                        Agregar al carrito
+                    </button>
+                </form>
             </div>
         @endforeach
     </div>
@@ -81,6 +80,11 @@
     </div>
 </div>
 
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white p-3 rounded-md shadow-lg opacity-0 transition-opacity duration-300" style="z-index: 9999;">
+    Producto agregado al carrito.
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const sliders = document.querySelectorAll('.slider');
@@ -94,6 +98,26 @@
         let currentSlider = null;
         let autoRotateInterval;
 
+        // Update cart count dynamically
+        function updateCartCount(count) {
+            const cartCount = document.querySelector('#cart-count');
+            if (cartCount) {
+                cartCount.innerText = count; // Update the cart count in the navbar
+            }
+        }
+
+        // Display toast notification
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        // Auto-rotation for product images
         function startAutoRotate(sliderImages) {
             stopAutoRotate();
             autoRotateInterval = setInterval(() => {
@@ -194,6 +218,33 @@
                 modalImage.classList.add('opacity-100');
             }, 10);
         }
+
+        // AJAX request to add to cart without page reload
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(form);
+                const formAction = form.action;
+
+                fetch(formAction, {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(); // Show the toast notification
+                        updateCartCount(data.cart_count);  // Update the cart count dynamically in the navbar
+                    } else {
+                        alert('Error al agregar el producto al carrito');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
     });
 </script>
 @endsection

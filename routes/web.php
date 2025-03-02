@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\Admin\ProveedorController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\Provider\ProveedorProductoController;
+use App\Http\Controllers\CarritoController;
 use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 
@@ -97,5 +99,28 @@ Route::middleware(['auth', 'can:provider-access'])->prefix('provider')->name('pr
         ]);
 });
 
-// Autenticación
+// Rutas de autenticación
+Route::middleware('guest')->group(function () {
+    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+    Route::post('/register', [RegisteredUserController::class, 'store']);
+});
+
+// Rutas del carrito
+Route::middleware('auth')->group(function () {
+    // Ruta para ver el carrito
+    Route::get('/carrito', [CarritoController::class, 'index'])->name('carrito');
+
+    // Ruta para agregar productos al carrito
+    Route::post('/carrito/agregar/{id}', [CarritoController::class, 'agregar'])->name('carrito.agregar');
+
+    // Ruta para eliminar productos del carrito
+    Route::delete('/carrito/eliminar/{id}', [CarritoController::class, 'eliminar'])->name('carrito.eliminar');
+});
+
+// Ruta para el checkout
+Route::middleware(['auth'])->get('/checkout', function () {
+    return view('checkout');  // Crea una vista para el checkout
+})->name('checkout');
+
+// Cargar rutas de autenticación predeterminadas de Laravel
 require __DIR__.'/auth.php';

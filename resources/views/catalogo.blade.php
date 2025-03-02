@@ -19,14 +19,6 @@
                 @endforeach
             </select>
 
-            <!-- Filtro de Proveedores -->
-            <select id="providerFilter" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="applyFilters()">
-                <option value="">Todos los Proveedores</option>
-                @foreach($proveedores as $proveedor)
-                    <option value="{{ $proveedor->id }}" {{ request('provider') == $proveedor->id ? 'selected' : '' }}>{{ $proveedor->name }}</option>
-                @endforeach
-            </select>
-
             <!-- Filtro de Precios -->
             <select id="priceFilter" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="applyFilters()">
                 <option value="">Ordenar por Precio</option>
@@ -48,8 +40,8 @@
                                 <img src="data:image/png;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="slider-image object-contain w-full h-full absolute top-0 left-0 opacity-0 transition-opacity duration-1000 cursor-pointer {{ $loop->first ? 'opacity-100' : '' }}">
                             @endforeach
                             @if($producto->imagenes->count() > 1)
-                                <button class="prev-button absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">&#8249;</button>
-                                <button class="next-button absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">&#8250;</button>
+                                <button class="prev-button absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="user-select: none;">&#8249;</button>
+                                <button class="next-button absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="user-select: none;">&#8250;</button>
                             @endif
                         </div>
                     @else
@@ -67,15 +59,15 @@
                 <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> {{ $producto->stock }}</p>
                 <p class="text-gray-900 dark:text-white mb-2"><strong>Proveedor:</strong> {{ $producto->creador ? $producto->creador->name : 'Sin proveedor' }}</p>
                 
-                @if ($producto->contacto_whatsapp)
-            <p class="mb-4">
-                <a href="https://wa.me/{{ $producto->contacto_whatsapp }}?text={{ urlencode('Hola, necesito saber más sobre este producto: ' . $producto->nombre . '. Especificaciones: ' . $producto->descripcion . '. Precio: $' . number_format($producto->precio, 0, ',', '.') . '. Unidades disponibles: ' . $producto->stock . '. Proveedor: ' . ($producto->creador ? $producto->creador->name : 'Sin proveedor')) }}"
-                    target="_blank" 
-                    class="inline-block px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300">
-                    Contacto por WhatsApp
-                </a>
-            </p>
-        @endif
+                <!-- Agregar al carrito -->
+                <form action="{{ route('carrito.agregar', $producto->id) }}" method="POST" id="add-to-cart-form-{{ $producto->id }}">
+                    @csrf
+                    <label for="cantidad" class="block text-sm font-semibold text-gray-900 dark:text-white">Cantidad</label>
+                    <input type="number" id="cantidad" name="cantidad" value="1" min="1" max="{{ $producto->stock }}" class="w-16 p-2 border rounded-md text-center" required>
+                    <button type="submit" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
+                        Agregar al carrito
+                    </button>
+                </form>
             </div>
         @empty
             <p class="text-center text-gray-700 dark:text-gray-300">No hay productos disponibles en esta categoría.</p>
@@ -93,35 +85,13 @@
     </div>
 </div>
 
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white p-3 rounded-md shadow-lg opacity-0 transition-opacity duration-300" style="z-index: 9999;">
+    Producto agregado al carrito.
+</div>
+
 <script>
-    // Aplicar filtros y redirigir con parámetros en la URL
-    function applyFilters() {
-        const category = document.getElementById('categoryFilter').value;
-        const provider = document.getElementById('providerFilter').value;
-        const price = document.getElementById('priceFilter').value;
-        
-        let url = `{{ route('catalogo') }}?`;
-        if (category) url += `category=${category}&`;
-        if (provider) url += `provider=${provider}&`;
-        if (price) url += `price=${price}`;
-        window.location.href = url;
-    }
-
-    // Restaurar valores predeterminados al recargar
-    function resetFilters() {
-        document.getElementById('categoryFilter').value = "";
-        document.getElementById('providerFilter').value = "";
-        document.getElementById('priceFilter').value = "";
-    }
-
-    // Evento para detectar la recarga de la página
     document.addEventListener('DOMContentLoaded', function() {
-        if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD) {
-            resetFilters();  // Llama a resetFilters al recargar la página
-            applyFilters();  // Aplica filtros con valores predeterminados
-        }
-
-        // Código de manejo del carrusel y modal de imágenes...
         const sliders = document.querySelectorAll('.slider');
         const modal = document.getElementById('imageModal');
         const modalImage = document.getElementById('modalImage');
@@ -133,6 +103,26 @@
         let currentSlider = null;
         let autoRotateInterval;
 
+        // Update cart count dynamically
+        function updateCartCount(count) {
+            const cartCount = document.querySelector('#cart-count');
+            if (cartCount) {
+                cartCount.innerText = count; // Update the cart count in the navbar
+            }
+        }
+
+        // Display toast notification
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        // Auto-rotation for product images
         function startAutoRotate(sliderImages) {
             stopAutoRotate();
             autoRotateInterval = setInterval(() => {
@@ -228,6 +218,33 @@
                 modalImage.classList.add('opacity-100');
             }, 10);
         }
+
+        // AJAX request to add to cart without page reload
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(form);
+                const formAction = form.action;
+
+                fetch(formAction, {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(); // Show the toast notification
+                        updateCartCount(data.cart_count);  // Update the cart count dynamically in the navbar
+                    } else {
+                        alert('Error al agregar el producto al carrito');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
     });
 </script>
 @endsection

@@ -16,13 +16,11 @@
                         {{ __('Home') }}
                     </x-nav-link>
 
-                    <!-- Enlace al catálogo visible para todos -->
                     <x-nav-link :href="route('catalogo')" :active="request()->routeIs('catalogo')" class="text-gray-800 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-300">
                         {{ __('Catálogo') }}
                     </x-nav-link>
 
                     @auth
-                        <!-- Enlace al dashboard correspondiente según el rol -->
                         @role('admin')
                             <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-gray-800 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-300">
                                 {{ __('Dashboard Admin') }}
@@ -36,7 +34,7 @@
                 </div>
             </div>
 
-            <!-- Botón de Modo Oscuro/Claro y Menú de Usuario (solo para usuarios autenticados) -->
+            <!-- Menú de Usuario -->
             <div class="hidden sm:flex sm:items-center sm:ml-6 space-x-6">
                 <!-- Botón de Modo Oscuro/Claro -->
                 <div class="relative inline-flex items-center cursor-pointer" @click.stop="$store.theme.toggle()">
@@ -45,14 +43,6 @@
                     <div class="absolute left-1 top-1 w-6 h-6 border border-gray-300 dark:border-yellow-500 rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center" :class="{ 'translate-x-8': darkMode }">
                         <svg x-show="!darkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="5" />
-                            <line x1="12" y1="1" x2="12" y2="3" />
-                            <line x1="12" y1="21" x2="12" y2="23" />
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                            <line x1="1" y1="12" x2="3" y2="12" />
-                            <line x1="21" y1="12" x2="23" y2="12" />
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                         </svg>
                         <svg x-show="darkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 1021 12.79z" />
@@ -64,8 +54,32 @@
                     <span x-show="darkMode">Modo Oscuro</span>
                 </span>
 
+                @guest
+                    <x-nav-link :href="route('login')" :active="request()->routeIs('login')" class="text-gray-800 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-300">
+                        {{ __('Iniciar sesión') }}
+                    </x-nav-link>
+
+                    <x-nav-link :href="route('register')" :active="request()->routeIs('register')" class="text-gray-800 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-300">
+                        {{ __('Registrarse') }}
+                    </x-nav-link>
+                @endguest
+
                 @auth
-                    <!-- Dropdown de Usuario solo visible para usuarios autenticados -->
+                    <!-- Carrito con ícono y cantidad de productos -->
+                    <a href="{{ route('carrito') }}" class="text-gray-800 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-300 flex items-center space-x-2">
+                        <!-- Ícono de carrito -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800 dark:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h18l-1.2 7H4.2L3 3z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 20a2 2 0 100-4 2 2 0 000 4zM17 20a2 2 0 100-4 2 2 0 000 4z" />
+                        </svg>
+                        <span class="text-sm">Carrito</span>
+                        <!-- Badge de cantidad de productos en el carrito -->
+                        <span id="cart-count" class="bg-red-500 text-white rounded-full px-2 py-1 text-xs font-bold">
+                            {{ count(session('carrito') ?? []) }}
+                        </span>
+                    </a>
+
+                    <!-- Dropdown de Usuario -->
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
                             <button class="flex items-center text-sm font-medium text-gray-900 dark:text-white hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition-all duration-300">
@@ -101,3 +115,74 @@
 <main class="mt-32">
     <!-- Aquí va el contenido principal de la página -->
 </main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Eliminar producto del carrito usando AJAX
+        const deleteButtons = document.querySelectorAll('.delete-button');
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+
+                const productId = button.getAttribute('data-id');
+
+                fetch(`/carrito/eliminar/${productId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Eliminar el producto de la vista
+                        const productItem = document.getElementById(`cart-item-${productId}`);
+                        productItem.remove();
+
+                        // Mostrar notificación de eliminación
+                        showToast();
+
+                        // Actualizar el contador del carrito en el navbar
+                        updateCartCount(data.cart_count);
+
+                        // Actualizar el total del carrito
+                        updateTotal(data.total);
+                    } else {
+                        alert('Error al eliminar el producto del carrito');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+
+        // Función para mostrar la notificación
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        // Función para actualizar el contador del carrito en el navbar
+        function updateCartCount(count) {
+            const cartCount = document.querySelector('#cart-count');
+            if (cartCount) {
+                cartCount.innerText = count;
+            }
+        }
+
+        // Función para actualizar el total del carrito
+        function updateTotal(total) {
+            const totalElement = document.querySelector('.cart-total');
+            if (totalElement) {
+                totalElement.innerText = '$' + total.toFixed(2);
+            }
+        }
+    });
+</script>

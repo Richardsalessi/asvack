@@ -1,0 +1,30 @@
+/* resources/css/cart.css */
+
+/* Cart item styles */
+.cart-item {
+  @apply flex justify-between items-center bg-white shadow-md rounded-lg p-4 mb-4;
+}
+
+.cart-item img {
+  @apply w-16 h-16 object-cover rounded-md;
+}
+
+.cart-item-details {
+  @apply ml-4;
+}
+
+.cart-item-name {
+  @apply text-lg font-semibold;
+}
+
+.cart-item-price {
+  @apply text-sm text-gray-500;
+}
+
+.cart-item-actions button {
+  @apply bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600;
+}
+
+.cart-item-actions button:hover {
+  @apply transition-colors duration-200 ease-in-out;
+}

@@ -39,8 +39,8 @@
                                 <img src="data:image/png;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="slider-image object-contain w-full h-full absolute top-0 left-0 opacity-0 transition-opacity duration-1000 cursor-pointer {{ $loop->first ? 'opacity-100' : '' }}">
                             @endforeach
                             @if($producto->imagenes->count() > 1)
-                                <button class="prev-button absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="user-select: none;">&#8249;</button>
-                                <button class="next-button absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="user-select: none;">&#8250;</button>
+                                <button class="prev-button absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">&#8249;</button>
+                                <button class="next-button absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">&#8250;</button>
                             @endif
                         </div>
                     @else
@@ -56,11 +56,11 @@
                 <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg"><strong>Precio:</strong> ${{ number_format($producto->precio, 0, ',', '.') }}</p>
                 <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> {{ $producto->stock }}</p>
                 
-                <!-- Formulario de agregar al carrito con cantidad -->
-                <form action="{{ route('carrito.agregar', $producto->id) }}" method="POST" id="add-to-cart-form-{{ $producto->id }}">
+                <!-- Formulario de agregar al carrito con validación de autenticación -->
+                <form action="{{ route('carrito.agregar', $producto->id) }}" method="POST" id="add-to-cart-form-{{ $producto->id }}" class="add-to-cart-form">
                     @csrf
                     <label for="cantidad" class="block text-sm font-semibold text-gray-900 dark:text-white">Cantidad</label>
-                    <input type="number" id="cantidad" name="cantidad" value="1" min="1" max="{{ $producto->stock }}" class="w-16 p-2 border rounded-md text-center" required>
+                    <input type="number" id="cantidad-{{ $producto->id }}" name="cantidad" value="1" min="1" max="{{ $producto->stock }}" class="w-16 p-2 border rounded-md text-center" required>
                     <button type="submit" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
                         Agregar al carrito
                     </button>
@@ -84,6 +84,59 @@
 <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white p-3 rounded-md shadow-lg opacity-0 transition-opacity duration-300" style="z-index: 9999;">
     Producto agregado al carrito.
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.add-to-cart-form');
+
+        forms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                @guest
+                    // Si el usuario no está autenticado, redirigir al login
+                    window.location.href = "{{ route('login') }}";
+                @else
+                    const formData = new FormData(form);
+                    const formAction = form.action;
+
+                    fetch(formAction, {
+                        method: 'POST',
+                        body: formData,
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast();
+                            updateCartCount(data.cart_count);
+                        } else {
+                            alert('Error al agregar el producto al carrito');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                @endguest
+            });
+        });
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        function updateCartCount(count) {
+            const cartCount = document.querySelector('#cart-count');
+            if (cartCount) {
+                cartCount.innerText = count;
+            }
+        }
+    });
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

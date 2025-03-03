@@ -182,24 +182,20 @@ class ProductoController extends Controller
     {
         $query = Producto::with('imagenes', 'categoria', 'creador');
 
-        if ($request->filled('category')) {
-            $query->where('categoria_id', $request->input('category'));
+        // Filtrar por categoría
+        if ($request->has('category') && !empty($request->category)) {
+            $query->where('categoria_id', $request->category);
         }
 
-        if ($request->filled('provider')) {
-            $query->where('user_id', $request->input('provider'));
+        // Ordenar por precio
+        if ($request->has('price') && in_array($request->price, ['asc', 'desc'])) {
+            $query->orderBy('precio', $request->price);
         }
 
-        if ($request->filled('price')) {
-            $query->orderBy('precio', $request->input('price'));
-        }
-
+        // Obtener productos
         $productos = $query->get();
         $categorias = Categoria::all();
-        $proveedores = User::whereHas('roles', function ($query) {
-            $query->whereIn('name', ['provider', 'admin']);
-        })->get();
 
-        return view('catalogo', compact('productos', 'categorias', 'proveedores'));
+        return view('catalogo', compact('productos', 'categorias'));
     }
 }

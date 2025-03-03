@@ -9,6 +9,7 @@ use App\Http\Controllers\Provider\ProveedorProductoController;
 use App\Http\Controllers\CarritoController;
 use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CatalogoController;
 
 // Página principal accesible para todos
 Route::get('/', function () {
@@ -121,6 +122,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth'])->get('/checkout', function () {
     return view('checkout');  // Crea una vista para el checkout
 })->name('checkout');
+
+Route::get('/catalogo', [CatalogoController::class, 'index'])->name('catalogo');
 
 // Cargar rutas de autenticación predeterminadas de Laravel
 require __DIR__.'/auth.php';

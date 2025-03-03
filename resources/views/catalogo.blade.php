@@ -5,27 +5,29 @@
     <!-- Título principal -->
     <div class="text-center mb-8">
         <h1 class="text-5xl font-extrabold text-gray-900 dark:text-white mb-4">Catálogo de Productos</h1>
-        <p class="text-2xl text-gray-600 dark:text-gray-300">Explora los componentes de calidad que nuestros proveedores tienen para ti.</p>
+        <p class="text-2xl text-gray-600 dark:text-gray-300">Explora los componentes de calidad que tenemos para ti.</p>
     </div>
 
     <!-- Filtros -->
     <div class="container mx-auto mb-8 px-4">
-        <div class="flex flex-wrap justify-center gap-4">
+        <form method="GET" action="{{ route('catalogo') }}" class="flex flex-wrap justify-center gap-4">
             <!-- Filtro de Categorías -->
-            <select id="categoryFilter" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="applyFilters()">
-                <option value="">Todas las Categorías</option>
+            <select name="categoria" id="categoria" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="this.form.submit()">
+                <option value="todos">Todas las Categorías</option>
                 @foreach($categorias as $categoria)
-                    <option value="{{ $categoria->id }}" {{ request('category') == $categoria->id ? 'selected' : '' }}>{{ $categoria->nombre }}</option>
+                    <option value="{{ $categoria->id }}" {{ request('categoria') == $categoria->id ? 'selected' : '' }}>
+                        {{ $categoria->nombre }}
+                    </option>
                 @endforeach
             </select>
 
             <!-- Filtro de Precios -->
-            <select id="priceFilter" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="applyFilters()">
+            <select name="precio" id="precio" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="this.form.submit()">
                 <option value="">Ordenar por Precio</option>
-                <option value="asc" {{ request('price') == 'asc' ? 'selected' : '' }}>Menor a Mayor</option>
-                <option value="desc" {{ request('price') == 'desc' ? 'selected' : '' }}>Mayor a Menor</option>
+                <option value="menor" {{ request('precio') == 'menor' ? 'selected' : '' }}>Menor a Mayor</option>
+                <option value="mayor" {{ request('precio') == 'mayor' ? 'selected' : '' }}>Mayor a Menor</option>
             </select>
-        </div>
+        </form>
     </div>
 
     <!-- Sección de productos -->
@@ -94,7 +96,26 @@
 </div>
 
 <script>
-        document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function () {
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+
+    // Si la URL no tiene los valores correctos, redirige a los valores predeterminados
+    if (!params.has('categoria') || params.get('categoria') === '' || !params.has('precio')) {
+        window.location.replace("http://127.0.0.1:8000/catalogo?categoria=todos&precio=");
+    }
+});
+    document.addEventListener('DOMContentLoaded', function() {
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams(url.search);
+
+        // Si la URL no tiene los valores predeterminados, forzar la redirección
+        if (!params.has('categoria') || params.get('categoria') !== 'todos' || !params.has('precio')) {
+            window.location.href = "http://127.0.0.1:8000/catalogo?categoria=todos&precio=";
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
     const forms = document.querySelectorAll('.add-to-cart-form');
 
     forms.forEach(form => {
@@ -131,6 +152,19 @@
         });
     });
 });
+    function applyFilters() {
+    const category = document.getElementById('categoryFilter').value;
+    const price = document.getElementById('priceFilter').value;
+
+    let url = new URL(window.location.href);
+    let params = new URLSearchParams();
+
+    if (category) params.set('category', category);
+    if (price) params.set('price', price);
+
+    window.location.href = `${url.origin}${url.pathname}?${params.toString()}`;
+}
+
 
         function showToast() {
             const toast = document.getElementById('toast');
@@ -171,6 +205,7 @@
                 cartCount.innerText = count; // Update the cart count in the navbar
             }
         }
+
 
         // Display toast notification
         function showToast() {
@@ -307,5 +342,6 @@
             });
         });
     });
+
 </script>
 @endsection

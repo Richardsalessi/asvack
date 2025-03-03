@@ -85,39 +85,43 @@
     Producto agregado al carrito.
 </div>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const forms = document.querySelectorAll('.add-to-cart-form');
+    document.addEventListener('DOMContentLoaded', function () {
+    const forms = document.querySelectorAll('.add-to-cart-form');
 
-        forms.forEach(form => {
-            form.addEventListener('submit', function(event) {
-                event.preventDefault();
+    forms.forEach(form => {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
 
-                @guest
-                    // Si el usuario no está autenticado, redirigir al login
-                    window.location.href = "{{ route('login') }}";
-                @else
-                    const formData = new FormData(form);
-                    const formAction = form.action;
+            // Verificar si el usuario está autenticado usando una variable de Blade
+            let isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
 
-                    fetch(formAction, {
-                        method: 'POST',
-                        body: formData,
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showToast();
-                            updateCartCount(data.cart_count);
-                        } else {
-                            alert('Error al agregar el producto al carrito');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
-                @endguest
+            if (!isAuthenticated) {
+                // Redirigir al login si no está autenticado
+                window.location.href = "{{ route('login') }}";
+                return;
+            }
+
+            // Si está autenticado, procesar la solicitud normalmente
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast();
+                    updateCartCount(data.cart_count);
+                } else {
+                    alert('Error al agregar el producto al carrito');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
             });
         });
+    });
+});
 
         function showToast() {
             const toast = document.getElementById('toast');
@@ -135,7 +139,7 @@
                 cartCount.innerText = count;
             }
         }
-    });
+});
 </script>
 
 <script>

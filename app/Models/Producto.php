@@ -15,8 +15,7 @@ class Producto extends Model
         'precio',
         'categoria_id',
         'stock',
-        'contacto_whatsapp',
-        'user_id',
+        'user_id', // Restaurado para evitar errores en la relación
     ];
 
     public function categoria()
@@ -31,6 +30,6 @@ class Producto extends Model
 
     public function creador()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id'); // Restaurado
     }
 }

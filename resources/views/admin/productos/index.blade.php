@@ -5,21 +5,43 @@
     <h1 class="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Lista de Productos</h1>
     <a href="{{ route('admin.productos.create') }}" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded mb-4 inline-block transition-all duration-300">Añadir Producto</a>
 
-    <!-- Filtro de Proveedor -->
-    <div class="mb-4">
-        <form action="{{ route('admin.productos.index') }}" method="GET" class="flex items-center gap-4">
-            <label for="proveedor" class="text-gray-700 dark:text-gray-300 font-bold">Filtrar por Proveedor:</label>
-            <select name="proveedor" id="proveedor" class="w-64 px-4 py-2 border rounded-lg text-gray-900 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Todos los Proveedores</option>
-                @foreach($proveedores as $proveedor)
-                    <option value="{{ $proveedor->id }}" {{ request('proveedor') == $proveedor->id ? 'selected' : '' }}>
-                        {{ $proveedor->name }}
+    <!-- Formulario de Filtros -->
+    <form action="{{ route('admin.productos.index') }}" method="GET" class="mb-6 flex flex-wrap items-center gap-4 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg shadow">
+        <!-- Filtro por Categoría -->
+        <div>
+            <label for="categoria" class="block text-gray-700 dark:text-gray-300 font-bold">Categoría:</label>
+            <select name="categoria" id="categoria" class="px-4 py-2 border rounded-lg text-gray-900 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                <option value="">Todas</option>
+                @foreach($categorias as $categoria)
+                    <option value="{{ $categoria->id }}" {{ request('categoria') == $categoria->id ? 'selected' : '' }}>
+                        {{ $categoria->nombre }}
                     </option>
                 @endforeach
             </select>
-            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300">Filtrar</button>
-        </form>
-    </div>
+        </div>
+
+        <!-- Filtro por Precio -->
+        <div>
+            <label for="precio" class="block text-gray-700 dark:text-gray-300 font-bold">Ordenar por Precio:</label>
+            <select name="precio" id="precio" class="px-4 py-2 border rounded-lg text-gray-900 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                <option value="">Sin ordenar</option>
+                <option value="asc" {{ request('precio') == 'asc' ? 'selected' : '' }}>Menor a mayor</option>
+                <option value="desc" {{ request('precio') == 'desc' ? 'selected' : '' }}>Mayor a menor</option>
+            </select>
+        </div>
+
+        <!-- Filtro por Stock -->
+        <div>
+            <label for="stock" class="block text-gray-700 dark:text-gray-300 font-bold">Ordenar por Stock:</label>
+            <select name="stock" id="stock" class="px-4 py-2 border rounded-lg text-gray-900 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                <option value="">Sin ordenar</option>
+                <option value="asc" {{ request('stock') == 'asc' ? 'selected' : '' }}>Menor a mayor</option>
+                <option value="desc" {{ request('stock') == 'desc' ? 'selected' : '' }}>Mayor a menor</option>
+            </select>
+        </div>
+
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-all duration-300 mt-4">Aplicar Filtros</button>
+    </form>
 
     <div class="overflow-x-auto mt-4">
         <table class="min-w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
@@ -31,8 +53,6 @@
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Precio</th>
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Categoría</th>
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Stock</th>
-                    <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Proveedor</th>
-                    <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Contacto</th>
                     <th class="px-6 py-3 text-left text-gray-900 dark:text-gray-300">Acciones</th>
                 </tr>
             </thead>
@@ -45,30 +65,16 @@
                                 <img src="data:image/jpeg;base64,{{ $imagen->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="h-16 w-16 object-cover rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
                             </a>
                         @endforeach
-                        @if ($producto->imagenes->count() > 3)
-                            <span class="text-sm text-gray-500 dark:text-gray-400">+{{ $producto->imagenes->count() - 3 }}</span>
-                        @endif
                     </td>
 
                     <td class="px-6 py-4 text-gray-900 dark:text-gray-300">{{ $producto->nombre }}</td>
-
                     <td class="px-6 py-4 text-gray-900 dark:text-gray-300">
                         <a href="#" class="open-desc-modal text-blue-500 hover:underline" data-description="{{ $producto->descripcion }}">Ver descripción</a>
                     </td>
-
                     <td class="px-6 py-4 text-gray-900 dark:text-gray-300">${{ number_format($producto->precio, 0, ',', '.') }}</td>
                     <td class="px-6 py-4 text-gray-900 dark:text-gray-300">{{ $producto->categoria->nombre ?? 'Sin categoría' }}</td>
                     <td class="px-6 py-4 text-gray-900 dark:text-gray-300">{{ $producto->stock }}</td>
-                    <td class="px-6 py-4 text-gray-900 dark:text-gray-300">
-                        {{ $producto->creador ? $producto->creador->name : 'Sin proveedor' }}
-                    </td>
-                    <td class="px-6 py-4 text-gray-900 dark:text-gray-300">
-                        @if ($producto->contacto_whatsapp)
-                            <a href="https://wa.me/{{ $producto->contacto_whatsapp }}" target="_blank" class="text-blue-500 hover:underline">WhatsApp</a>
-                        @else
-                            <span class="text-gray-500">Sin contacto</span>
-                        @endif
-                    </td>
+                    
                     <td class="px-6 py-4">
                         <a href="{{ route('admin.productos.edit', $producto) }}" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded transition-all duration-300 mr-2">Editar</a>
                         <form action="{{ route('admin.productos.destroy', $producto) }}" method="POST" class="inline-block">
@@ -84,26 +90,171 @@
     </div>
 </div>
 
-<!-- Modal para mostrar la descripción completa -->
-<div id="descModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 modal-hidden">
-    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-11/12 max-w-lg mx-auto mt-20 transform translate-y-20 opacity-0 transition-transform duration-300 ease-out" id="descModalContent">
-        <button id="closeDescModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
-        <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Descripción del Producto</h2>
-        <p id="descContent" class="text-gray-700 dark:text-gray-300"></p>
+<!-- MODAL PARA IMÁGENES -->
+<div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 justify-center items-center">
+    <div class="relative bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg max-w-lg">
+        <button id="closeImageModal" class="absolute top-2 right-2 text-gray-600 dark:text-gray-300 text-2xl font-bold hover:text-red-500">&times;</button>
+        <img id="modalImage" src="" class="w-full h-auto rounded-lg no-select no-drag">
     </div>
 </div>
 
-<!-- Modal para mostrar la imagen -->
-<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50 hidden no-select">
-    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden p-4 max-w-full max-h-full flex items-center justify-center">
-        <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-10">&times;</button>
-        <img id="modalImage" src="" alt="Imagen del producto" class="max-w-full max-h-screen object-contain">
+<!-- MODAL PARA DESCRIPCIÓN -->
+<div id="descModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+    <div class="relative bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg max-w-lg">
+        <button id="closeDescModal" class="absolute top-2 right-2 text-gray-600 dark:text-gray-300 text-xl font-bold hover:text-red-500">&times;</button>
+        <p id="descContent" class="text-gray-800 dark:text-gray-300"></p>
     </div>
 </div>
 
-<a href="#" id="backToTopButton" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-800 text-white rounded-full p-3 shadow-lg transition-all duration-300">
-    &#8679;
-</a>
+<!-- Script para manejar los modales -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // MODAL DE IMÁGENES
+        const imageModal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const closeImageModal = document.getElementById('closeImageModal');
+
+        document.querySelectorAll('.open-image-modal').forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+                modalImage.src = button.querySelector('img').src;
+                imageModal.classList.remove('hidden');
+            });
+        });
+
+        closeImageModal.addEventListener('click', function () {
+            imageModal.classList.add('hidden');
+        });
+
+        imageModal.addEventListener('click', function (e) {
+            if (e.target === imageModal) {
+                imageModal.classList.add('hidden');
+            }
+        });
+
+        // MODAL DE DESCRIPCIÓN
+        const descModal = document.getElementById('descModal');
+        const descContent = document.getElementById('descContent');
+        const closeDescModal = document.getElementById('closeDescModal');
+
+        document.querySelectorAll('.open-desc-modal').forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+                descContent.textContent = button.getAttribute('data-description');
+                descModal.classList.remove('hidden');
+            });
+        });
+
+        closeDescModal.addEventListener('click', function () {
+            descModal.classList.add('hidden');
+        });
+
+        descModal.addEventListener('click', function (e) {
+            if (e.target === descModal) {
+                descModal.classList.add('hidden');
+            }
+        });
+    });
+</script>
+
+<!-- Estilos para bloquear selección y arrastre de imágenes -->
+<style>
+    /* Evitar que la imagen sea seleccionable */
+    .no-select {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
+
+    /* Evitar que la imagen sea arrastrable */
+    .no-drag {
+        pointer-events: none;
+        user-drag: none;
+        -webkit-user-drag: none;
+        -moz-user-drag: none;
+        -ms-user-drag: none;
+    }
+
+    /* Ajustar el botón de cierre (X) */
+    #closeImageModal, #closeDescModal {
+        cursor: pointer;
+        background: none;
+        border: none;
+        font-size: 24px;
+    }
+
+    /* Mejorar la visibilidad del modal */
+    #imageModal img {
+        max-width: 100%;
+        max-height: 80vh;
+        display: block;
+        margin: auto;
+    }
+
+    
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const scrollToTopBtn = document.getElementById("scrollToTopBtn");
+    
+        window.addEventListener("scroll", function () {
+            if (window.scrollY > 200) {
+                scrollToTopBtn.classList.remove("opacity-0", "pointer-events-none");
+                scrollToTopBtn.classList.add("opacity-100");
+            } else {
+                scrollToTopBtn.classList.add("opacity-0", "pointer-events-none");
+            }
+        });
+    
+        scrollToTopBtn.addEventListener("click", function () {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    });
+</script>
+    
+    <style>
+    /* Asegurar que el botón sea completamente clickeable */
+    #scrollToTopBtn {
+        position: fixed;
+        bottom: 80px; /* Distancia desde la parte inferior */
+        right: 25px; /* Distancia desde la derecha */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background-color: #4338ca;
+        color: white;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: opacity 0.3s ease-in-out, transform 0.2s;
+        font-size: 24px;
+        z-index: 1000; /* Asegurar que esté por encima de otros elementos */
+        pointer-events: auto; /* Garantizar que sea clickeable */
+    }
+    
+    /* Asegurar que el botón sea totalmente clickeable */
+    #scrollToTopBtn::before {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+    }
+    
+    #scrollToTopBtn:hover {
+        background-color: #3730a3;
+        transform: scale(1.1);
+    }
+    
+    #scrollToTopBtn:active {
+        transform: scale(0.9);
+    }
+    </style>
+
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -188,4 +339,4 @@
         display: none;
     }
 </style>
-@endsection
+@endsection 

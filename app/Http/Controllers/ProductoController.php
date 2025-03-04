@@ -1,195 +1,169 @@
-    <?php
+<?php
 
-    namespace App\Http\Controllers;
+namespace App\Http\Controllers;
 
-    use App\Models\Producto;
-    use App\Models\Imagen;
-    use App\Models\Categoria;
-    use App\Models\User;
-    use Illuminate\Http\Request;
-    use Illuminate\Support\Facades\Auth;
+use App\Models\Producto;
+use App\Models\Imagen;
+use App\Models\Categoria;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
-    class ProductoController extends Controller
+class ProductoController extends Controller
+{
+    public function index(Request $request)
     {
-        public function index(Request $request)
-        {
-            $query = Producto::with('imagenes', 'categoria', 'creador');
+        // Obtener solo los administradores para el filtro
+        $administradores = User::whereHas('roles', function ($query) {
+            $query->where('name', 'admin');
+        })->get();
 
-            if ($request->filled('proveedor')) {
-                $query->where('user_id', $request->proveedor);
-            }
+        // Obtener todas las categorías para el filtro
+        $categorias = Categoria::all();
 
-            $productos = $query->get();
-            $proveedores = User::whereHas('roles', function ($query) {
-                $query->whereIn('name', ['provider', 'admin']);
-            })->get();
+        // Construir la consulta de productos
+        $query = Producto::with('imagenes', 'categoria');
 
-            return view('admin.productos.index', compact('productos', 'proveedores'));
+        if ($request->filled('admin')) {
+            $query->where('user_id', $request->admin);
         }
 
-        public function create()
-        {
-            $categorias = Categoria::all();
-            return view('admin.productos.create', compact('categorias'));
+        if ($request->filled('categoria')) {
+            $query->where('categoria_id', $request->categoria);
         }
 
-        public function store(Request $request)
-        {
-            // Procesar el número de WhatsApp para que contenga solo 10 dígitos y añadir el prefijo +57
-            $contactoWhatsApp = preg_replace('/\D/', '', $request->input('contacto_whatsapp'));
-            if (strlen($contactoWhatsApp) === 10) {
-                $contactoWhatsApp = '+57' . $contactoWhatsApp;
+        if ($request->filled('precio')) {
+            $query->orderBy('precio', $request->precio);
+        }
+
+        if ($request->filled('stock')) {
+            $query->orderBy('stock', $request->stock);
+        }
+
+        $productos = $query->get();
+
+        return view('admin.productos.index', compact('productos', 'administradores', 'categorias'));
+    }
+
+
+    public function create()
+    {
+        $categorias = Categoria::all();
+        return view('admin.productos.create', compact('categorias'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->merge([
+            'precio' => str_replace('.', '', $request->input('precio'))
+        ]);
+
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'descripcion' => 'required|string',
+            'precio' => 'required|numeric|min:0|max:100000000',
+            'categoria_id' => 'required|exists:categorias,id',
+            'stock' => 'required|integer|min:0',
+            'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $producto = Producto::create([
+            'nombre' => $request->nombre,
+            'descripcion' => $request->descripcion,
+            'precio' => $request->precio,
+            'categoria_id' => $request->categoria_id,
+            'stock' => $request->stock,
+            'user_id' => Auth::id(),
+        ]);
+
+        if ($request->hasFile('imagenes')) {
+            foreach ($request->file('imagenes') as $imagen) {
+                $path = $imagen->getClientOriginalName();
+                $contenido = base64_encode(file_get_contents($imagen->getRealPath()));
+
+                $producto->imagenes()->create([
+                    'ruta' => $path,
+                    'contenido' => $contenido
+                ]);
             }
+        }
 
-            $request->merge([
-                'precio' => str_replace('.', '', $request->input('precio')),
-                'contacto_whatsapp' => $contactoWhatsApp
-            ]);
+        return redirect()->route('admin.productos.index')->with('success', 'Producto creado con éxito.');
+    }
 
-            $request->validate([
-                'nombre' => 'required|string|max:255',
-                'descripcion' => 'required|string',
-                'precio' => 'required|numeric|min:0|max:100000000',
-                'categoria_id' => 'required|exists:categorias,id',
-                'stock' => 'required|integer|min:0',
-                'contacto_whatsapp' => [
-                    'required',
-                    'string',
-                    function ($attribute, $value, $fail) {
-                        // Verificar que el número de WhatsApp contenga solo dígitos y exactamente 10 dígitos después del prefijo +57
-                        if (!preg_match('/^\+573\d{9}$/', $value)) {
-                            if (!ctype_digit(str_replace('+57', '', $value))) {
-                                $fail('El número de WhatsApp solo debe contener dígitos.');
-                            } else {
-                                $fail('El número de WhatsApp debe contener exactamente 10 dígitos después del prefijo +57.');
-                            }
-                        }
-                    }
-                ],
-                'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            ]);
+    public function edit(Producto $producto)
+    {
+        $categorias = Categoria::all();
+        return view('admin.productos.edit', compact('producto', 'categorias'));
+    }
 
-            $producto = Producto::create([
-                'nombre' => $request->nombre,
-                'descripcion' => $request->descripcion,
-                'precio' => $request->precio,
-                'categoria_id' => $request->categoria_id,
-                'stock' => $request->stock,
-                'contacto_whatsapp' => $request->contacto_whatsapp,
-                'user_id' => Auth::id(),
-            ]);
+    public function update(Request $request, Producto $producto)
+    {
+        $request->merge([
+            'precio' => str_replace('.', '', $request->input('precio'))
+        ]);
 
-            if ($request->hasFile('imagenes')) {
-                foreach ($request->file('imagenes') as $imagen) {
-                    $path = $imagen->getClientOriginalName();
-                    $contenido = base64_encode(file_get_contents($imagen->getRealPath()));
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'descripcion' => 'required|string',
+            'precio' => 'required|numeric|min:0|max:100000000',
+            'categoria_id' => 'required|exists:categorias,id',
+            'stock' => 'required|integer|min:0',
+            'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
 
-                    $producto->imagenes()->create([
-                        'ruta' => $path,
-                        'contenido' => $contenido
-                    ]);
+        $producto->update([
+            'nombre' => $request->nombre,
+            'descripcion' => $request->descripcion,
+            'precio' => $request->precio,
+            'categoria_id' => $request->categoria_id,
+            'stock' => $request->stock,
+        ]);
+
+        if ($request->has('eliminar_imagenes')) {
+            foreach ($request->eliminar_imagenes as $imagenId) {
+                $imagen = Imagen::find($imagenId);
+                if ($imagen && $imagen->producto_id == $producto->id) {
+                    $imagen->delete();
                 }
             }
-
-            return redirect()->route('admin.productos.index')->with('success', 'Producto creado con éxito.');
         }
 
-        public function edit(Producto $producto)
-        {
-            $categorias = Categoria::all();
-            return view('admin.productos.edit', compact('producto', 'categorias'));
+        if ($request->hasFile('imagenes')) {
+            foreach ($request->file('imagenes') as $imagen) {
+                $path = $imagen->getClientOriginalName();
+                $contenido = base64_encode(file_get_contents($imagen->getRealPath()));
+
+                $producto->imagenes()->create([
+                    'ruta' => $path,
+                    'contenido' => $contenido
+                ]);
+            }
         }
 
-        public function update(Request $request, Producto $producto)
-        {
-            // Procesar el número de WhatsApp para que contenga solo 10 dígitos y añadir el prefijo +57
-            $contactoWhatsApp = preg_replace('/\D/', '', $request->input('contacto_whatsapp'));
-            if (strlen($contactoWhatsApp) === 10) {
-                $contactoWhatsApp = '+57' . $contactoWhatsApp;
-            }
+        return redirect()->route('admin.productos.index')->with('success', 'Producto actualizado con éxito.');
+    }
 
-            $request->merge([
-                'precio' => str_replace('.', '', $request->input('precio')),
-                'contacto_whatsapp' => $contactoWhatsApp
-            ]);
-
-            $request->validate([
-                'nombre' => 'required|string|max:255',
-                'descripcion' => 'required|string',
-                'precio' => 'required|numeric|min:0|max:100000000',
-                'categoria_id' => 'required|exists:categorias,id',
-                'stock' => 'required|integer|min:0',
-                'contacto_whatsapp' => [
-                    'required',
-                    'string',
-                    function ($attribute, $value, $fail) {
-                        if (!preg_match('/^\+573\d{9}$/', $value)) {
-                            if (!ctype_digit(str_replace('+57', '', $value))) {
-                                $fail('El número de WhatsApp solo debe contener dígitos.');
-                            } else {
-                                $fail('El número de WhatsApp debe contener exactamente 10 dígitos después del prefijo +57.');
-                            }
-                        }
-                    }
-                ],
-                'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            ]);
-
-            $producto->update([
-                'nombre' => $request->nombre,
-                'descripcion' => $request->descripcion,
-                'precio' => $request->precio,
-                'categoria_id' => $request->categoria_id,
-                'stock' => $request->stock,
-                'contacto_whatsapp' => $request->contacto_whatsapp,
-            ]);
-
-            if ($request->has('eliminar_imagenes')) {
-                foreach ($request->eliminar_imagenes as $imagenId) {
-                    $imagen = Imagen::find($imagenId);
-                    if ($imagen && $imagen->producto_id == $producto->id) {
-                        $imagen->delete();
-                    }
-                }
-            }
-
-            if ($request->hasFile('imagenes')) {
-                foreach ($request->file('imagenes') as $imagen) {
-                    $path = $imagen->getClientOriginalName();
-                    $contenido = base64_encode(file_get_contents($imagen->getRealPath()));
-
-                    $producto->imagenes()->create([
-                        'ruta' => $path,
-                        'contenido' => $contenido
-                    ]);
-                }
-            }
-
-            return redirect()->route('admin.productos.index')->with('success', 'Producto actualizado con éxito.');
+    public function destroy(Producto $producto)
+    {
+        foreach ($producto->imagenes as $imagen) {
+            $imagen->delete();
         }
 
-        public function destroy(Producto $producto)
-        {
-            foreach ($producto->imagenes as $imagen) {
-                $imagen->delete();
-            }
+        $producto->delete();
+        return redirect()->route('admin.productos.index')->with('success', 'Producto eliminado con éxito.');
+    }
 
-            $producto->delete();
-            return redirect()->route('admin.productos.index')->with('success', 'Producto eliminado con éxito.');
-        }
-
-        public function catalogo(Request $request)
-        {
-        $query = Producto::with('imagenes', 'categoria', 'creador');
-
-        \Log::info('Filtros recibidos:', $request->all()); // Depuración para ver qué llega
+    public function catalogo(Request $request)
+    {
+        $query = Producto::with('imagenes', 'categoria');
 
         // Filtrar por categoría
         if ($request->filled('category')) {
             $query->where('categoria_id', $request->category);
         }
 
-        // Ordenar por precio (asegurarse de que es un valor válido)
+        // Ordenar por precio
         if ($request->filled('price') && in_array($request->price, ['asc', 'desc'])) {
             $query->orderBy('precio', $request->price);
         }
@@ -198,5 +172,5 @@
         $categorias = Categoria::all();
 
         return view('catalogo', compact('productos', 'categorias'));
-        }
     }
+}

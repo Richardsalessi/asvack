@@ -96,6 +96,66 @@
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const scrollToTopBtn = document.getElementById("scrollToTopBtn");
+    
+        window.addEventListener("scroll", function () {
+            if (window.scrollY > 200) {
+                scrollToTopBtn.classList.remove("opacity-0", "pointer-events-none");
+                scrollToTopBtn.classList.add("opacity-100");
+            } else {
+                scrollToTopBtn.classList.add("opacity-0", "pointer-events-none");
+            }
+        });
+    
+        scrollToTopBtn.addEventListener("click", function () {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    });
+</script>
+    
+    <style>
+    /* Asegurar que el botón sea completamente clickeable */
+    #scrollToTopBtn {
+        position: fixed;
+        bottom: 80px; /* Distancia desde la parte inferior */
+        right: 25px; /* Distancia desde la derecha */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background-color: #4338ca;
+        color: white;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: opacity 0.3s ease-in-out, transform 0.2s;
+        font-size: 24px;
+        z-index: 1000; /* Asegurar que esté por encima de otros elementos */
+        pointer-events: auto; /* Garantizar que sea clickeable */
+    }
+    
+    /* Asegurar que el botón sea totalmente clickeable */
+    #scrollToTopBtn::before {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+    }
+    
+    #scrollToTopBtn:hover {
+        background-color: #3730a3;
+        transform: scale(1.1);
+    }
+    
+    #scrollToTopBtn:active {
+        transform: scale(0.9);
+    }
+    </style>
+
+<script>
     document.addEventListener('DOMContentLoaded', function () {
     const url = new URL(window.location.href);
     const params = new URLSearchParams(url.search);

@@ -10,37 +10,68 @@
                 </a>
             </div>
 
+            <!-- Botón de Modo Oscuro/Claro -->
+            <div class="flex items-center space-x-6">
+                <div class="relative inline-flex items-center cursor-pointer" @click.stop="$store.theme.toggle()">
+                    <input type="checkbox" class="sr-only">
+                    <div class="w-16 h-8 bg-gray-300 dark:bg-gray-700 rounded-full shadow-inner transition-all duration-300"></div>
+                    <div class="absolute left-1 top-1 w-6 h-6 border border-gray-300 dark:border-yellow-500 rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center" :class="{ 'translate-x-8': darkMode }">
+                        <svg x-show="!darkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5" />
+                        </svg>
+                        <svg x-show="darkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 1021 12.79z" />
+                        </svg>
+                    </div>
+                </div>
+                <span class="ml-3 text-sm font-medium text-gray-900 dark:text-white transition-all duration-300 select-none">
+                    <span x-show="!darkMode">Modo Claro</span>
+                    <span x-show="darkMode">Modo Oscuro</span>
+                </span>
+            </div>
+
             <!-- Menú Normal (Oculto en móviles) -->
             <div class="hidden md:flex space-x-8 items-center">
-                <x-nav-link :href="route('home')" :active="request()->routeIs('home')" class="text-gray-600 hover:text-gray-800">Home</x-nav-link>
-                <x-nav-link :href="route('catalogo')" :active="request()->routeIs('catalogo')" class="text-gray-600 hover:text-gray-800">Catálogo</x-nav-link>
+                <x-nav-link :href="route('home')" :active="request()->routeIs('home')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Home</x-nav-link>
+                <x-nav-link :href="route('catalogo')" :active="request()->routeIs('catalogo')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Catálogo</x-nav-link>
 
                 @auth
                     @role('admin')
-                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-gray-600 hover:text-gray-800">Dashboard Admin</x-nav-link>
+                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Dashboard Admin</x-nav-link>
                     @endrole
                 @endauth
+
+                @guest
+                    <div class="flex space-x-4 items-center">
+                        <x-nav-link :href="route('login')" :active="request()->routeIs('login')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
+                            {{ __('Iniciar sesión') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('register')" :active="request()->routeIs('register')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
+                            {{ __('Registrarse') }}
+                        </x-nav-link>
+                    </div>
+                @endguest
 
                 @auth
                     <!-- Dropdown de Usuario (solo visible en pantallas normales) -->
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
                             <button @click="userMenu = !userMenu" class="flex items-center text-sm font-medium focus:outline-none transition-all duration-300"
-                                    :class="userMenu ? 'text-gray-800' : 'text-gray-600 hover:text-gray-800'">
+                                    :class="userMenu ? 'text-gray-800 dark:text-gray-100' : 'text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white'">
                                 <div>{{ Auth::user()->name }}</div>
                                 <div class="ml-1">
                                     <svg class="fill-current h-5 w-5 transition-all transform hover:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a 1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
                                 </div>
                             </button>
                         </x-slot>
 
                         <x-slot name="content">
-                            <x-dropdown-link :href="route('profile.edit')" class="text-gray-600 hover:text-gray-800">Perfil</x-dropdown-link>
+                            <x-dropdown-link :href="route('profile.edit')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Perfil</x-dropdown-link>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="text-gray-600 hover:text-gray-800">
+                                <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
                                     Cerrar sesión
                                 </x-dropdown-link>
                             </form>
@@ -51,8 +82,8 @@
 
             <!-- Carrito (fuera del menú hamburguesa) -->
             @auth
-                <a href="{{ route('carrito') }}" class="text-gray-600 hover:text-gray-800 flex items-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 hover:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <a href="{{ route('carrito') }}" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h18l-1.2 7H4.2L3 3z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M7 20a2 2 0 100-4 2 2 0 000 4zM17 20a2 2 0 100-4 2 2 0 000 4z" />
                     </svg>
@@ -64,7 +95,7 @@
             @endauth
 
             <!-- Botón Menú Hamburguesa en móviles -->
-            <button @click="open = true" class="md:hidden p-2 text-gray-600 hover:text-gray-800 focus:outline-none">
+            <button @click="open = true" class="md:hidden p-2 text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white focus:outline-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
                 </svg>
@@ -76,7 +107,7 @@
     <div x-show="open" class="md:hidden absolute top-0 left-0 w-full bg-white dark:bg-gray-900 shadow-lg border-b border-gray-300 dark:border-gray-700 p-4">
         <!-- Botón de Cerrar -->
         <div class="flex justify-end">
-            <button @click="open = false" class="p-2 text-gray-600 hover:text-gray-800 focus:outline-none">
+            <button @click="open = false" class="p-2 text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white focus:outline-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -85,20 +116,31 @@
 
         <!-- Enlaces del Menú -->
         <div class="flex flex-col space-y-4">
-            <x-nav-link :href="route('home')" :active="request()->routeIs('home')" class="text-gray-600 hover:text-gray-800">Home</x-nav-link>
-            <x-nav-link :href="route('catalogo')" :active="request()->routeIs('catalogo')" class="text-gray-600 hover:text-gray-800">Catálogo</x-nav-link>
+            <x-nav-link :href="route('home')" :active="request()->routeIs('home')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Home</x-nav-link>
+            <x-nav-link :href="route('catalogo')" :active="request()->routeIs('catalogo')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Catálogo</x-nav-link>
 
             @auth
                 @role('admin')
-                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-gray-600 hover:text-gray-800">Dashboard Admin</x-nav-link>
+                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Dashboard Admin</x-nav-link>
                 @endrole
             @endauth
 
+            @guest
+                <div class="flex flex-col space-y-2">
+                    <x-nav-link :href="route('login')" :active="request()->routeIs('login')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
+                        {{ __('Iniciar sesión') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('register')" :active="request()->routeIs('register')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
+                        {{ __('Registrarse') }}
+                    </x-nav-link>
+                </div>
+            @endguest
+
             @auth
-                <x-nav-link :href="route('profile.edit')" class="text-gray-600 hover:text-gray-800">Perfil</x-nav-link>
+                <x-nav-link :href="route('profile.edit')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Perfil</x-nav-link>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <x-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="text-gray-600 hover:text-gray-800">
+                    <x-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
                         Cerrar sesión
                     </x-nav-link>
                 </form>
@@ -110,6 +152,8 @@
 <main class="mt-32">
     <!-- Aquí va el contenido principal de la página -->
 </main>
+
+
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

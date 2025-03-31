@@ -222,7 +222,7 @@
     if (category) params.set('category', category);
     if (price) params.set('price', price);
 
-    window.location.href = `${url.origin}${url.pathname}?${params.toString()}`;
+    window.location.href = ${url.origin}${url.pathname}?${params.toString()};
 }
 
 

@@ -36,23 +36,12 @@
     </div>
 </div>
 
-<!-- Modal para mostrar la imagen ampliada -->
-<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50" style="display: none;">
-    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl mx-auto mt-20" style="user-select: none;">
-        <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-30" style="user-select: none;">&times;</button>
-        <img id="modalImage" src="" alt="Imagen ampliada del producto" class="w-full object-contain p-4 opacity-0 transition-opacity duration-1000 z-10">
-        <button id="modalPrev" class="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none; user-select: none;">&#8249;</button>
-        <button id="modalNext" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none; user-select: none;">&#8250;</button>
-    </div>
-</div>
-
 <!-- TOAST ÚNICO REUTILIZABLE -->
 <div id="toast-global" class="fixed bottom-5 right-5 text-white p-4 rounded-md shadow-lg opacity-0 transition-opacity duration-300 z-50 flex items-center gap-2"
     style="min-width: 300px;">
     <span id="toast-icon">✅</span>
     <span id="toast-text">Mensaje genérico</span>
 </div>
-
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -208,8 +197,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (cartCount) {
                 cartCount.innerText = count; // Update the cart count in the navbar
             }
-        }
-
+        } 
         // Display toast notification
         function showToast() {
             const toast = document.getElementById('toast');
@@ -220,108 +208,5 @@ document.addEventListener("DOMContentLoaded", function () {
                 toast.classList.add('opacity-0');
             }, 3000);
         }
-
-        // Auto-rotation for product images
-        function startAutoRotate(sliderImages) {
-            stopAutoRotate();
-            autoRotateInterval = setInterval(() => {
-                changeImage('next', sliderImages);
-            }, 3000);
-        }
-
-        function stopAutoRotate() {
-            clearInterval(autoRotateInterval);
-        }
-
-        sliders.forEach(slider => {
-            let currentIndex = 0;
-            const images = slider.querySelectorAll('.slider-image');
-            const prevButton = slider.querySelector('.prev-button');
-            const nextButton = slider.querySelector('.next-button');
-
-            if (images.length > 1) {
-                startAutoRotate(images);
-
-                nextButton?.addEventListener('click', () => {
-                    changeImage('next', images);
-                });
-
-                prevButton?.addEventListener('click', () => {
-                    changeImage('prev', images);
-                });
-            }
-
-            slider.addEventListener('click', function (event) {
-                if (!event.target.classList.contains('prev-button') && !event.target.classList.contains('next-button')) {
-                    currentSlider = slider;
-                    currentSliderImages = images;
-                    const visibleImage = Array.from(images).findIndex(image => image.classList.contains('opacity-100'));
-                    currentModalIndex = visibleImage !== -1 ? visibleImage : 0;
-
-                    showImageInModal(currentModalIndex);
-
-                    stopAutoRotate();
-
-                    if (currentSliderImages.length > 1) {
-                        modalPrevButton.style.display = 'block';
-                        modalNextButton.style.display = 'block';
-                    } else {
-                        modalPrevButton.style.display = 'none';
-                        modalNextButton.style.display = 'none';
-                    }
-
-                    modal.style.display = 'flex';
-                }
-            });
-        });
-
-        function changeImage(direction, images) {
-            images[currentModalIndex].classList.remove('opacity-100');
-            images[currentModalIndex].classList.add('opacity-0');
-
-            if (direction === 'next') {
-                currentModalIndex = (currentModalIndex + 1) % images.length;
-            } else {
-                currentModalIndex = (currentModalIndex - 1 + images.length) % images.length;
-            }
-
-            images[currentModalIndex].classList.remove('opacity-0');
-            images[currentModalIndex].classList.add('opacity-100');
-
-            if (modal.style.display === 'flex') {
-                showImageInModal(currentModalIndex);
-            }
-        }
-
-        closeModalButton.addEventListener('click', function () {
-            modal.style.display = 'none';
-            startAutoRotate(currentSliderImages);
-        });
-
-        modal.addEventListener('click', function (e) {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-                startAutoRotate(currentSliderImages);
-            }
-        });
-
-        modalNextButton.addEventListener('click', function () {
-            changeImage('next', currentSliderImages);
-        });
-
-        modalPrevButton.addEventListener('click', function () {
-            changeImage('prev', currentSliderImages);
-        });
-
-        function showImageInModal(index) {
-            modalImage.classList.remove('opacity-100');
-            modalImage.classList.add('opacity-0');
-            modalImage.src = currentSliderImages[index].src;
-            setTimeout(() => {
-                modalImage.classList.remove('opacity-0');
-                modalImage.classList.add('opacity-100');
-            }, 10);
-        }
-    }
 </script>
 @endsection

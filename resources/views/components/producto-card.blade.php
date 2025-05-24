@@ -1,11 +1,11 @@
 <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex flex-col text-center h-full">
 
     <!-- Imagen -->
-    <div class="h-64 w-full mb-4 overflow-hidden relative flex items-center justify-center">
+    <div class="h-64 w-full mb-4 overflow-hidden relative flex items-center justify-center cursor-pointer" onclick="abrirModalImagen(this)">
         @if(!empty($producto->imagenes) && count($producto->imagenes) > 0)
-            <img src="data:image/png;base64,{{ $producto->imagenes[0]->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="object-contain max-h-full" style="user-select: none;">
+            <img src="data:image/png;base64,{{ $producto->imagenes[0]->contenido }}" alt="Imagen de {{ $producto->nombre }}" class="object-contain max-h-full producto-modal-trigger" style="user-select: none;">
         @else
-            <img src="{{ asset('storage/placeholder.png') }}" alt="Imagen de {{ $producto->nombre }}" class="object-contain max-h-full" style="user-select: none;">
+            <img src="{{ asset('storage/placeholder.png') }}" alt="Imagen de {{ $producto->nombre }}" class="object-contain max-h-full producto-modal-trigger" style="user-select: none;">
         @endif
     </div>
 
@@ -38,3 +38,151 @@
         @endauth
     </form>
 </div>
+
+<!-- Modal para mostrar la imagen ampliada -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50" style="display: none;">
+    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl mx-auto mt-20" style="user-select: none;">
+        <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-30" style="user-select: none;">&times;</button>
+        <img id="modalImage" src="" alt="Imagen ampliada del producto" class="w-full object-contain p-4 opacity-0 transition-opacity duration-1000 z-10">
+        <button id="modalPrev" class="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none; user-select: none;">&#8249;</button>
+        <button id="modalNext" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none; user-select: none;">&#8250;</button>
+    </div>
+</div>
+
+<script>
+    // ...otros scripts que ya tienes (como scrollToTop, toast, etc.)
+
+    function abrirModalImagen(elemento) {
+        const src = elemento.querySelector('img').src;
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+
+        modalImg.src = src;
+        modal.style.display = 'flex';
+        modalImg.classList.remove('opacity-0');
+        modalImg.classList.add('opacity-100');
+    }
+
+    // Cerrar modal al hacer clic fuera o en el botón X
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        const closeModal = document.getElementById('closeModal');
+
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+            modalImg.classList.remove('opacity-100');
+            modalImg.classList.add('opacity-0');
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                modalImg.classList.remove('opacity-100');
+                modalImg.classList.add('opacity-0');
+            }
+        });
+    });
+
+    // Auto-rotation for product images
+        function startAutoRotate(sliderImages) {
+            stopAutoRotate();
+            autoRotateInterval = setInterval(() => {
+                changeImage('next', sliderImages);
+            }, 3000);
+        }
+
+        function stopAutoRotate() {
+            clearInterval(autoRotateInterval);
+        }
+
+    sliders.forEach(slider => {
+            let currentIndex = 0;
+            const images = slider.querySelectorAll('.slider-image');
+            const prevButton = slider.querySelector('.prev-button');
+            const nextButton = slider.querySelector('.next-button');
+
+            if (images.length > 1) {
+                startAutoRotate(images);
+
+                nextButton?.addEventListener('click', () => {
+                    changeImage('next', images);
+                });
+
+                prevButton?.addEventListener('click', () => {
+                    changeImage('prev', images);
+                });
+            }
+
+            slider.addEventListener('click', function (event) {
+                if (!event.target.classList.contains('prev-button') && !event.target.classList.contains('next-button')) {
+                    currentSlider = slider;
+                    currentSliderImages = images;
+                    const visibleImage = Array.from(images).findIndex(image => image.classList.contains('opacity-100'));
+                    currentModalIndex = visibleImage !== -1 ? visibleImage : 0;
+
+                    showImageInModal(currentModalIndex);
+
+                    stopAutoRotate();
+
+                    if (currentSliderImages.length > 1) {
+                        modalPrevButton.style.display = 'block';
+                        modalNextButton.style.display = 'block';
+                    } else {
+                        modalPrevButton.style.display = 'none';
+                        modalNextButton.style.display = 'none';
+                    }
+
+                    modal.style.display = 'flex';
+                }
+            });
+        });
+
+        function changeImage(direction, images) {
+            images[currentModalIndex].classList.remove('opacity-100');
+            images[currentModalIndex].classList.add('opacity-0');
+
+            if (direction === 'next') {
+                currentModalIndex = (currentModalIndex + 1) % images.length;
+            } else {
+                currentModalIndex = (currentModalIndex - 1 + images.length) % images.length;
+            }
+
+            images[currentModalIndex].classList.remove('opacity-0');
+            images[currentModalIndex].classList.add('opacity-100');
+
+            if (modal.style.display === 'flex') {
+                showImageInModal(currentModalIndex);
+            }
+        }
+
+        closeModalButton.addEventListener('click', function () {
+            modal.style.display = 'none';
+            startAutoRotate(currentSliderImages);
+        });
+
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                startAutoRotate(currentSliderImages);
+            }
+        });
+
+        modalNextButton.addEventListener('click', function () {
+            changeImage('next', currentSliderImages);
+        });
+
+        modalPrevButton.addEventListener('click', function () {
+            changeImage('prev', currentSliderImages);
+        });
+
+        function showImageInModal(index) {
+            modalImage.classList.remove('opacity-100');
+            modalImage.classList.add('opacity-0');
+            modalImage.src = currentSliderImages[index].src;
+            setTimeout(() => {
+                modalImage.classList.remove('opacity-0');
+                modalImage.classList.add('opacity-100');
+            }, 10);
+        }
+</script>

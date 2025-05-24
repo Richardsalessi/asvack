@@ -36,13 +36,13 @@
     </div>
 </div>
 
-<!-- Modal para mostrar la imagen ampliada -->
+<!-- Modal para mostrar la imagen ampliada (global, no dentro de tarjetas) -->
 <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50" style="display: none;">
     <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl mx-auto mt-20" style="user-select: none;">
         <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-30" style="user-select: none;">&times;</button>
         <img id="modalImage" src="" alt="Imagen ampliada del producto" class="w-full object-contain p-4 opacity-0 transition-opacity duration-1000 z-10">
-        <button id="modalPrev" class="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none; user-select: none;">&#8249;</button>
-        <button id="modalNext" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none; user-select: none;">&#8250;</button>
+        <button id="modalPrev" class="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none;">&#8249;</button>
+        <button id="modalNext" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none;">&#8250;</button>
     </div>
 </div>
 
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function () {
         contenedor.innerHTML += `
         <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex flex-col text-center h-full">
             <div class="h-64 w-full mb-4 overflow-hidden relative flex items-center justify-center">
-                <img src="${imagen}" alt="Imagen de ${producto.nombre}" class="object-contain max-h-full" style="user-select: none;">
+                <img src="${imagen}" alt="Imagen de ${producto.nombre}" class="object-contain w-full h-full cursor-pointer producto-imagen" style="user-select: none;">
             </div>
 
             <div class="flex flex-col justify-start min-h-[230px]">
@@ -367,6 +367,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     volverAVincularFormularios();
+    vincularImagenesModal();
 }
 
     function volverAVincularFormularios() {
@@ -403,6 +404,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function vincularImagenesModal() {
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const closeModalButton = document.getElementById('closeModal');
+
+    document.querySelectorAll('.producto-imagen').forEach(img => {
+        img.addEventListener('click', () => {
+            modalImage.src = img.src;
+            modal.style.display = 'flex';
+            modalImage.classList.remove('opacity-0');
+            modalImage.classList.add('opacity-100');
+        });
+    });
+
+    closeModalButton.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+}
 
     async function filtrarProductos() {
         const categoria = categoriaFiltro.value;

@@ -5,8 +5,8 @@
             <!-- Logo -->
             <div class="flex items-center">
                 <a href="{{ route('home') }}">
-                    <img x-show="!darkMode" src="{{ asset('images/Logo official 01 black.png') }}" alt="Logo Claro" class="h-16 w-auto">
-                    <img x-show="darkMode" src="{{ asset('images/Logo official png white.png') }}" alt="Logo Oscuro" class="h-16 w-auto">
+                    <img x-show="!darkMode" src="{{ asset('images/logo-negro.webp') }}" alt="Logo Claro" class="h-16 w-auto">
+                    <img x-show="darkMode" src="{{ asset('images/logo-blanco.webp') }}" alt="Logo Oscuro" class="h-16 w-auto">
                 </a>
             </div>
 

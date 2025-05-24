@@ -4,8 +4,8 @@
 <div class="py-8">
     <!-- Logo de la empresa -->
     <div class="text-center mb-8">
-        <img src="{{ asset('images/logo_negro.png') }}" alt="Logo de Asvack" class="mx-auto w-48 dark:hidden" style="user-select: none;" draggable="false">
-        <img src="{{ asset('images/logo_blanco.png') }}" alt="Logo de Asvack" class="mx-auto w-48 hidden dark:block" style="user-select: none;" draggable="false">
+        <img src="{{ asset('images/logo-inicio-negro.webp') }}" alt="Logo de Asvack" class="mx-auto w-48 dark:hidden" style="user-select: none;" draggable="false">
+        <img src="{{ asset('images/logo-inicio-blanco.webp') }}" alt="Logo de Asvack" class="mx-auto w-48 hidden dark:block" style="user-select: none;" draggable="false">
     </div>
 
     <!-- Título principal -->

@@ -23,8 +23,8 @@
         <div class="flex flex-col items-center mb-6 space-y-2">
             <!-- Logo que cambia según el tema -->
             <a href="/" class="flex items-center">
-                <img src="{{ asset('images/logo_negro.png') }}" alt="Logo claro" class="w-24 h-24 dark:hidden">
-                <img src="{{ asset('images/logo_blanco.png') }}" alt="Logo oscuro" class="w-24 h-24 hidden dark:block">
+                <img src="{{ asset('images/logo-negro.webp') }}" alt="Logo claro" class="w-24 h-24 dark:hidden">
+                <img src="{{ asset('images/logo-blanco.webp') }}" alt="Logo oscuro" class="w-24 h-24 hidden dark:block">
             </a>
             <!-- Nombre de la aplicación -->
             <span class="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-wide">

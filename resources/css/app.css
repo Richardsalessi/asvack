@@ -1,9 +1,5 @@
-/* resources/css/app.css */
-
-/* Importar Tailwind */
+@import '@fontsource/figtree';       /* ✅ fuente local (rápida) */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Importar estilos personalizados */
-@import 'cart.css';
+@import 'cart.css';                  /* ✅ personalizado al final */

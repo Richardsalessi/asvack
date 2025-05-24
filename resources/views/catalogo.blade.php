@@ -27,7 +27,7 @@
 </div>
 
             <!-- Sección de productos -->
-            <div id="productos-container" class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div id="productos-container" class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
                 @forelse ($productos as $producto)
             @include('components.producto-card', ['producto' => $producto])
         @empty
@@ -331,40 +331,40 @@ document.addEventListener('DOMContentLoaded', function () {
     // 🔁 ESTILO UNIFICADO COMO EN WELCOME Y CATÁLOGO (modo oscuro, botones, tarjetas)
     productos.forEach(producto => {
     const imagen = producto.imagenes.length > 0
-        ? data:image/png;base64,${producto.imagenes[0].contenido}
+        ? `data:image/png;base64,${producto.imagenes[0].contenido}`
         : '/storage/placeholder.png';
 
-    contenedor.innerHTML += 
-        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex flex-col items-center text-center">
-            <div class="h-64 w-full mb-4 overflow-hidden relative">
-                <img src="${imagen}" alt="Imagen de ${producto.nombre}" class="object-contain w-full h-full" style="user-select: none;">
+        contenedor.innerHTML += `
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex flex-col text-center h-full">
+            <div class="h-64 w-full mb-4 overflow-hidden relative flex items-center justify-center">
+                <img src="${imagen}" alt="Imagen de ${producto.nombre}" class="object-contain max-h-full" style="user-select: none;">
             </div>
 
-            <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">${producto.nombre}</h2>
+            <div class="flex flex-col justify-start min-h-[230px]">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">${producto.nombre}</h2>
+                <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">Especificaciones técnicas:</p>
+                <p class="text-gray-900 dark:text-white text-sm line-clamp-4 leading-relaxed">${producto.descripcion}</p>
+            </div>
 
-            <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">Especificaciones técnicas:</p>
-            <p class="text-gray-900 dark:text-white mb-2">${producto.descripcion}</p>
+            <div class="mt-4">
+                <p class="text-gray-900 dark:text-white font-bold text-lg"><strong>Precio:</strong> $${new Intl.NumberFormat('es-CO').format(producto.precio)}</p>
+                <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> ${producto.stock}</p>
+            </div>
 
-            <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg"><strong>Precio:</strong> $${new Intl.NumberFormat('es-CO').format(producto.precio)}</p>
-            <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> ${producto.stock}</p>
-
-            <form method="POST" action="/carrito/agregar/${producto.id}" class="add-to-cart-form">
+            <form method="POST" action="/carrito/agregar/${producto.id}" class="add-to-cart-form mt-auto w-full">
                 <input type="hidden" name="_token" value="${token}">
-                <label for="cantidad" class="block text-sm font-semibold text-gray-900 dark:text-white">Cantidad</label>
+                <label class="block text-sm font-semibold text-gray-900 dark:text-white">Cantidad</label>
                 <input type="number" name="cantidad" value="1" min="1" max="${producto.stock}" class="w-16 p-2 border rounded-md text-center cantidad-input bg-white text-black dark:bg-gray-800 dark:text-white dark:border-gray-700" required>
 
                 ${isLoggedIn
-                    ? <button type="submit" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
-                        Agregar al carrito
-                    </button>
-                    : <button type="button" onclick="window.location.href='/login'" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
-                        Inicia sesión para comprar
-                    </button>
+                    ? `<button type="submit" class="btn-agregar-carrito">Agregar al carrito</button>`
+                    : `<button type="button" onclick="window.location.href='/login'" class="btn-agregar-carrito">Inicia sesión para comprar</button>`
                 }
             </form>
         </div>
-    ;
+    `;
 });
+
 
     volverAVincularFormularios();
 }
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const precio = precioFiltro.value;
 
         try {
-            const response = await fetch(/api/catalogo/filtrar?categoria=${categoria}&precio=${precio});
+            const response = await fetch(`/api/catalogo/filtrar?categoria=${categoria}&precio=${precio}`);
             const data = await response.json();
             renderProductos(data);
         } catch (error) {

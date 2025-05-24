@@ -29,7 +29,7 @@
     </div>
 
             <!-- Sección de productos aleatorios -->
-            <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
                 @foreach ($productosAleatorios as $producto)
             <x-producto-card :producto="$producto" />
         @endforeach

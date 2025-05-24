@@ -9,7 +9,7 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
-        './resources/css/**/*.css', // 👈 Agrega esta línea para incluir los archivos CSS
+        './resources/css/**/*.css',
     ],
     theme: {
         extend: {
@@ -18,5 +18,8 @@ export default {
             },
         },
     },
-    plugins: [forms],
+    plugins: [
+        forms,
+        require('@tailwindcss/line-clamp'), // ✅ NECESARIO PARA CORTAR TEXTO
+    ],
 };

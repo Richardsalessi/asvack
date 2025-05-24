@@ -90,9 +90,11 @@
     </div>
 </div>
 
-<!-- Toast Notification -->
-<div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white p-3 rounded-md shadow-lg opacity-0 transition-opacity duration-300" style="z-index: 9999;">
-    Producto agregado al carrito.
+<!-- TOAST ÚNICO REUTILIZABLE -->
+<div id="toast-global" class="fixed bottom-5 right-5 text-white p-4 rounded-md shadow-lg opacity-0 transition-opacity duration-300 z-50 flex items-center gap-2"
+    style="min-width: 300px;">
+    <span id="toast-icon">✅</span>
+    <span id="toast-text">Mensaje genérico</span>
 </div>
 
 <script>
@@ -200,12 +202,14 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast();
+                    showToastGlobal('success', 'Producto agregado al carrito.');
                     updateCartCount(data.cart_count);
                 } else {
-                    alert('Error al agregar el producto al carrito');
+                    showToastGlobal('error', data.message);
                 }
             })
+
+                
             .catch(error => {
                 console.error('Error:', error);
             });
@@ -226,15 +230,32 @@
 }
 
 
-        function showToast() {
-            const toast = document.getElementById('toast');
+        function showToastGlobal(type, message) {
+            const toast = document.getElementById('toast-global');
+            const icon = document.getElementById('toast-icon');
+            const text = document.getElementById('toast-text');
+
+            if (type === 'success') {
+                toast.classList.remove('bg-red-600');
+                toast.classList.add('bg-green-600');
+                icon.textContent = '✅';
+            } else {
+                toast.classList.remove('bg-green-600');
+                toast.classList.add('bg-red-600');
+                icon.textContent = '⚠️';
+            }
+
+            text.textContent = message;
+
             toast.classList.remove('opacity-0');
             toast.classList.add('opacity-100');
+
             setTimeout(() => {
                 toast.classList.remove('opacity-100');
                 toast.classList.add('opacity-0');
-            }, 3000);
+            }, 3500);
         }
+
 
         function updateCartCount(count) {
             const cartCount = document.querySelector('#cart-count');
@@ -242,7 +263,6 @@
                 cartCount.innerText = count;
             }
         }
-    });
 </script>
 
 <script>
@@ -392,9 +412,10 @@
                     if (data.success) {
                         showToast(); // Show the toast notification
                         updateCartCount(data.cart_count);  // Update the cart count dynamically in the navbar
-                    } else {
-                        alert('Error al agregar el producto al carrito');
+                    else {
+                        showToastGlobal('error', data.message);
                     }
+
                 })
                 .catch(error => {
                     console.error('Error:', error);

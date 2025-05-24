@@ -90,11 +90,13 @@
     </div>
 </div>
 
-<!-- MODAL PARA IMÁGENES -->
-<div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 justify-center items-center">
-    <div class="relative bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg max-w-lg">
-        <button id="closeImageModal" class="absolute top-2 right-2 text-gray-600 dark:text-gray-300 text-2xl font-bold hover:text-red-500">&times;</button>
-        <img id="modalImage" src="" class="w-full h-auto rounded-lg no-select no-drag">
+<!-- MODAL PARA IMÁGENES - CORREGIDO -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex justify-center items-center h-full">
+        <div class="relative bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg max-w-lg">
+            <button id="closeModal" class="absolute top-2 right-2 text-gray-600 dark:text-gray-300 text-2xl font-bold hover:text-red-500">&times;</button>
+            <img id="modalImage" src="" class="w-full h-auto rounded-lg no-select no-drag">
+        </div>
     </div>
 </div>
 
@@ -108,21 +110,15 @@
 
 <!-- Script para manejar los modales -->
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // MODAL DE IMÁGENES
-        const imageModal = document.getElementById('imageModal');
-        const modalImage = document.getElementById('modalImage');
-        const closeImageModal = document.getElementById('closeImageModal');
-
-        document.querySelectorAll('.open-image-modal').forEach(button => {
+            document.querySelectorAll('.open-modal').forEach(button => {
             button.addEventListener('click', function (e) {
                 e.preventDefault();
-                modalImage.src = button.querySelector('img').src;
+                modalImage.src = button.getAttribute('data-image-url');
                 imageModal.classList.remove('hidden');
             });
         });
 
-        closeImageModal.addEventListener('click', function () {
+        closeModalButton.addEventListener('click', function () {
             imageModal.classList.add('hidden');
         });
 

@@ -30,55 +30,45 @@
                 </span>
             </div>
 
-            <!-- Menú Normal (Oculto en móviles) -->
-            <div class="hidden md:flex space-x-8 items-center">
-                <x-nav-link :href="route('home')" :active="request()->routeIs('home')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Home</x-nav-link>
-                <x-nav-link :href="route('catalogo')" :active="request()->routeIs('catalogo')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Catálogo</x-nav-link>
+            <!-- Menú Normal (sin x-nav-link) -->
+<div class="hidden md:flex space-x-8 items-center">
+    <a href="{{ route('home') }}" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Home</a>
+    <a href="{{ route('catalogo') }}" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Catálogo</a>
 
-                @auth
-                    @role('admin')
-                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Dashboard Admin</x-nav-link>
-                    @endrole
-                @endauth
+    @auth
+        @role('admin')
+            <a href="{{ route('admin.dashboard') }}" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Dashboard Admin</a>
+        @endrole
+    @endauth
 
-                @guest
-                    <div class="flex space-x-4 items-center">
-                        <x-nav-link :href="route('login')" :active="request()->routeIs('login')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
-                            {{ __('Iniciar sesión') }}
-                        </x-nav-link>
-                        <x-nav-link :href="route('register')" :active="request()->routeIs('register')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
-                            {{ __('Registrarse') }}
-                        </x-nav-link>
-                    </div>
-                @endguest
+    @guest
+        <div class="flex space-x-4 items-center">
+            <a href="{{ route('login') }}" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Iniciar sesión</a>
+            <a href="{{ route('register') }}" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Registrarse</a>
+        </div>
+    @endguest
 
-                @auth
-                    <!-- Dropdown de Usuario (solo visible en pantallas normales) -->
-                    <x-dropdown align="right" width="48">
-                        <x-slot name="trigger">
-                            <button @click="userMenu = !userMenu" class="flex items-center text-sm font-medium focus:outline-none transition-all duration-300"
-                                    :class="userMenu ? 'text-gray-800 dark:text-gray-100' : 'text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white'">
-                                <div>{{ Auth::user()->name }}</div>
-                                <div class="ml-1">
-                                    <svg class="fill-current h-5 w-5 transition-all transform hover:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a 1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </button>
-                        </x-slot>
-
-                        <x-slot name="content">
-                            <x-dropdown-link :href="route('profile.edit')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Perfil</x-dropdown-link>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
-                                    Cerrar sesión
-                                </x-dropdown-link>
-                            </form>
-                        </x-slot>
-                    </x-dropdown>
-                @endauth
+    @auth
+        <div class="relative">
+            <button @click="userMenu = !userMenu" class="flex items-center text-sm font-medium focus:outline-none transition-all duration-300 text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
+                <span>{{ Auth::user()->name }}</span>
+                <svg class="ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a 1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
+            <div x-show="userMenu" @click.outside="userMenu = false" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 z-50">
+                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Perfil</a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        Cerrar sesión
+                    </button>
+                </form>
             </div>
+        </div>
+    @endauth
+</div>
+
 
             <!-- Carrito (fuera del menú hamburguesa) -->
             @auth
@@ -89,7 +79,7 @@
                     </svg>
                     <span class="text-sm">Carrito</span>
                     <span id="cart-count" class="bg-red-500 text-white rounded-full px-2 py-1 text-xs font-bold">
-                        {{ count(session('carrito') ?? []) }}
+                    {{ session('carrito') ? collect(session('carrito'))->sum('cantidad') : 0 }}
                     </span>
                 </a>
             @endauth

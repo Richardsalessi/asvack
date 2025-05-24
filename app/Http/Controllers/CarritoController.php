@@ -25,82 +25,122 @@ class CarritoController extends Controller
         return view('carrito.index', compact('carrito', 'total'));
     }
 
-    // Función que obtiene la imagen base64 de un producto
+    // Obtener imagen en base64
     private function getImagenBase64($id)
     {
         $producto = Producto::find($id);
-        $imagen = $producto->imagenes()->first(); // Tomamos la primera imagen asociada al producto
+        $imagen = $producto->imagenes()->first();
         if ($imagen && $imagen->contenido) {
-            return 'data:image/png;base64,' . $imagen->contenido; // Devolvemos la imagen en formato base64
+            return 'data:image/png;base64,' . $imagen->contenido;
         }
-        return asset('storage/placeholder.png'); // Si no tiene imagen, usamos una por defecto
+        return asset('storage/placeholder.png');
     }
 
     // Agregar un producto al carrito
     public function agregar(Request $request, $id)
     {
         $producto = Producto::findOrFail($id);
-        $imagen = $this->getImagenBase64($id); // Obtenemos la imagen base64
+        $imagen = $this->getImagenBase64($id);
 
-        // Verificar la cantidad solicitada y si hay suficiente stock
-        $cantidadAAgregar = $request->cantidad;
-        if ($cantidadAAgregar > $producto->stock) {
-            return response()->json(['success' => false, 'message' => 'No hay suficiente stock para agregar esa cantidad.']);
-        }
+        $cantidadAAgregar = (int) $request->input('cantidad', 1);
 
-        // Obtener el carrito actual o crear uno vacío
         $carrito = session()->get('carrito', []);
 
-        // Verificar si el producto ya está en el carrito
-        if (isset($carrito[$id])) {
-            // Si el producto ya está en el carrito, incrementar la cantidad
-            $carrito[$id]['cantidad'] += $cantidadAAgregar;
-        } else {
-            // Agregar el producto al carrito
-            $carrito[$id] = [
-                'nombre' => $producto->nombre,
-                'precio' => $producto->precio,
-                'imagen' => $imagen,
-                'cantidad' => $cantidadAAgregar,
-            ];
+        $cantidadEnCarrito = isset($carrito[$id]) ? $carrito[$id]['cantidad'] : 0;
+        $cantidadTotal = $cantidadEnCarrito + $cantidadAAgregar;
+
+        if ($cantidadTotal > $producto->stock) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No puedes agregar más de las unidades disponibles (' . $producto->stock . ').'
+            ]);
         }
 
-        // Guardar el carrito actualizado en la sesión
-        session()->put('carrito', $carrito);
-        session()->put('cart_count', count($carrito)); // Actualizamos la cantidad de productos en el carrito
+        // Agregar o actualizar el producto en el carrito
+        $carrito[$id] = [
+            'nombre' => $producto->nombre,
+            'precio' => $producto->precio,
+            'imagen' => $imagen,
+            'cantidad' => $cantidadTotal,
+        ];
 
-        // Responder con el número actualizado de productos en el carrito
-        return response()->json(['success' => true, 'cart_count' => count($carrito)]);
+        session()->put('carrito', $carrito);
+
+        // Recalcular el total de unidades para mostrar en el ícono del carrito
+        $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
+        session()->put('cart_count', $totalUnidades);
+
+        return response()->json([
+            'success' => true,
+            'cart_count' => $totalUnidades
+        ]);
     }
+
 
     // Eliminar un producto del carrito
     public function eliminar(Request $request, $id)
     {
-        // Obtenemos el carrito desde la sesión
         $carrito = session()->get('carrito', []);
 
-        // Verificamos si el producto existe en el carrito
         if (isset($carrito[$id])) {
-            unset($carrito[$id]); // Eliminamos el producto
-            session()->put('carrito', $carrito); // Guardamos el carrito actualizado
+            unset($carrito[$id]);
+            session()->put('carrito', $carrito);
         }
 
-        // Si el carrito está vacío, eliminamos el contador
         if (count($carrito) == 0) {
             session()->forget('cart_count');
+            $totalUnidades = 0;
         } else {
-            session()->put('cart_count', count($carrito)); // Actualizamos el número de productos en el carrito
+            $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
+            session()->put('cart_count', $totalUnidades);
         }
 
-        // Calculamos el total actualizado
-        $total = array_sum(array_column($carrito, 'total'));
+        $total = 0;
+        foreach ($carrito as $item) {
+            $total += $item['precio'] * $item['cantidad'];
+        }
 
-        // Retornamos una respuesta en JSON con el estado de la eliminación
         return response()->json([
             'success' => true,
-            'cart_count' => count($carrito),
+            'cart_count' => $totalUnidades,
             'total' => $total,
             'message' => 'Producto eliminado del carrito'
+        ]);
+    }
+
+    // Quitar una cantidad específica de un producto del carrito
+    public function quitar(Request $request, $id)
+    {
+        $carrito = session()->get('carrito', []);
+
+        if (isset($carrito[$id])) {
+            $cantidadARestar = $request->cantidad;
+            $carrito[$id]['cantidad'] -= $cantidadARestar;
+
+            if ($carrito[$id]['cantidad'] <= 0) {
+                unset($carrito[$id]);
+            }
+
+            session()->put('carrito', $carrito);
+        }
+
+        $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
+        $total = 0;
+        foreach ($carrito as $item) {
+            $total += $item['precio'] * $item['cantidad'];
+        }
+
+        if ($totalUnidades == 0) {
+            session()->forget('cart_count');
+        } else {
+            session()->put('cart_count', $totalUnidades);
+        }
+
+        return response()->json([
+            'success' => true,
+            'cart_count' => $totalUnidades,
+            'total' => $total,
+            'message' => 'Cantidad actualizada'
         ]);
     }
 }

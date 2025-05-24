@@ -191,5 +191,14 @@
             });
         }
     </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (performance.navigation.type === performance.navigation.TYPE_BACK_FORWARD) {
+            location.reload(); // Forzar recarga si el usuario usa botón atrás
+        }
+    });
+</script>
+
 </body>
 </html>

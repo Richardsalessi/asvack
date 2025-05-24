@@ -12,13 +12,27 @@
         @foreach($carrito as $id => $producto)
             <div class="flex justify-between items-center mb-4">
                 <div>{{ $producto['nombre'] }} (x{{ $producto['cantidad'] }})</div>
+                <form action="{{ route('carrito.quitar', $id) }}" method="POST" class="flex items-center gap-2">
+                @csrf
+                <input type="number" name="cantidad" min="1" max="{{ $producto['cantidad'] }}" class="w-16 border text-center rounded px-1 py-0.5 text-sm" placeholder="Cant." required>
+                <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-sm">
+                    Quitar
+                </button>
+            </form>
                 <div>${{ number_format($producto['precio'] * $producto['cantidad'], 0, ',', '.') }}</div>
             </div>
         @endforeach
 
         <div class="flex justify-between items-center mt-4">
             <strong>Total:</strong>
-            <span>${{ number_format(array_sum(array_column($carrito, 'precio')) , 0, ',', '.') }}</span>
+            @php
+            $total = 0;
+            foreach ($carrito as $item) {
+                $total += $item['precio'] * $item['cantidad'];
+            }
+        @endphp
+        <span>${{ number_format($total, 0, ',', '.') }}</span>
+
         </div>
 
         <!-- Aquí iría el botón para proceder con la compra -->

@@ -61,9 +61,16 @@
                     @csrf
                     <label for="cantidad" class="block text-sm font-semibold text-gray-900 dark:text-white">Cantidad</label>
                     <input type="number" id="cantidad-{{ $producto->id }}" name="cantidad" value="1" min="1" max="{{ $producto->stock }}" class="w-16 p-2 border rounded-md text-center" required>
-                    <button type="submit" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
-                        Agregar al carrito
-                    </button>
+
+                    @auth
+                        <button type="submit" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
+                            Agregar al carrito
+                        </button>
+                    @else
+                        <button type="button" onclick="window.location.href='{{ route('login') }}'" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
+                            Inicia sesión para comprar
+                        </button>
+                    @endauth
                 </form>
             </div>
         @endforeach
@@ -80,11 +87,12 @@
     </div>
 </div>
 
-<!-- Toast Notification -->
-<div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white p-3 rounded-md shadow-lg opacity-0 transition-opacity duration-300" style="z-index: 9999;">
-    Producto agregado al carrito.
+<!-- TOAST ÚNICO REUTILIZABLE -->
+<div id="toast-global" class="fixed bottom-5 right-5 text-white p-4 rounded-md shadow-lg opacity-0 transition-opacity duration-300 z-50 flex items-center gap-2"
+    style="min-width: 300px;">
+    <span id="toast-icon">✅</span>
+    <span id="toast-text">Mensaje genérico</span>
 </div>
-<!-- Botón de subir -->
 
 
 <script>
@@ -171,14 +179,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 body: formData,
             })
             .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast();
-                    updateCartCount(data.cart_count);
-                } else {
-                    alert('Error al agregar el producto al carrito');
-                }
-            })
+                .then(data => {
+                    if (data.success) {
+                        showToastGlobal('success', 'Producto agregado al carrito.');
+                        updateCartCount(data.cart_count);
+                    } else {
+                        showToastGlobal('error', data.message);
+                    }
+                })
+                
             .catch(error => {
                 console.error('Error:', error);
             });
@@ -186,23 +195,39 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-        function showToast() {
-            const toast = document.getElementById('toast');
-            toast.classList.remove('opacity-0');
-            toast.classList.add('opacity-100');
-            setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0');
-            }, 3000);
+        function showToastGlobal(type, message) {
+        const toast = document.getElementById('toast-global');
+        const icon = document.getElementById('toast-icon');
+        const text = document.getElementById('toast-text');
+
+        if (type === 'success') {
+            toast.classList.remove('bg-red-600');
+            toast.classList.add('bg-green-600');
+            icon.textContent = '✅';
+        } else {
+            toast.classList.remove('bg-green-600');
+            toast.classList.add('bg-red-600');
+            icon.textContent = '⚠️';
         }
 
-        function updateCartCount(count) {
-            const cartCount = document.querySelector('#cart-count');
-            if (cartCount) {
-                cartCount.innerText = count;
-            }
+        text.textContent = message;
+
+        toast.classList.remove('opacity-0');
+        toast.classList.add('opacity-100');
+
+        setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            toast.classList.add('opacity-0');
+        }, 3500);
+    }
+
+    function updateCartCount(count) {
+        const cartCount = document.querySelector('#cart-count');
+        if (cartCount) {
+            cartCount.innerText = count;
         }
-});
+    }
+
 </script>
 
 <script>
@@ -338,33 +363,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 modalImage.classList.add('opacity-100');
             }, 10);
         }
-
-        // AJAX request to add to cart without page reload
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            form.addEventListener('submit', function(event) {
-                event.preventDefault();
-                const formData = new FormData(form);
-                const formAction = form.action;
-
-                fetch(formAction, {
-                    method: 'POST',
-                    body: formData,
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast(); // Show the toast notification
-                        updateCartCount(data.cart_count);  // Update the cart count dynamically in the navbar
-                    } else {
-                        alert('Error al agregar el producto al carrito');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            });
-        });
-    });
+    }
 </script>
 @endsection

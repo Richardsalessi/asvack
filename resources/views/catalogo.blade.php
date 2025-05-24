@@ -9,29 +9,25 @@
     </div>
 
     <!-- Filtros -->
-    <div class="container mx-auto mb-8 px-4">
-        <form method="GET" action="{{ route('catalogo') }}" class="flex flex-wrap justify-center gap-4">
-            <!-- Filtro de Categorías -->
-            <select name="categoria" id="categoria" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="this.form.submit()">
-                <option value="todos">Todas las Categorías</option>
-                @foreach($categorias as $categoria)
-                    <option value="{{ $categoria->id }}" {{ request('categoria') == $categoria->id ? 'selected' : '' }}>
-                        {{ $categoria->nombre }}
-                    </option>
-                @endforeach
-            </select>
+    <div class="container mx-auto mb-8 px-4 flex flex-wrap justify-center gap-4">
+    <!-- Filtro de Categorías -->
+    <select id="categoriaFiltro" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2">
+        <option value="todos">Todas las Categorías</option>
+        @foreach($categorias as $categoria)
+            <option value="{{ $categoria->id }}">{{ $categoria->nombre }}</option>
+        @endforeach
+    </select>
 
-            <!-- Filtro de Precios -->
-            <select name="precio" id="precio" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2" onchange="this.form.submit()">
-                <option value="">Ordenar por Precio</option>
-                <option value="menor" {{ request('precio') == 'menor' ? 'selected' : '' }}>Menor a Mayor</option>
-                <option value="mayor" {{ request('precio') == 'mayor' ? 'selected' : '' }}>Mayor a Menor</option>
-            </select>
-        </form>
-    </div>
+    <!-- Filtro de Precios -->
+    <select id="precioFiltro" class="w-48 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg p-2">
+        <option value="">Ordenar por Precio</option>
+        <option value="menor">Menor a Mayor</option>
+        <option value="mayor">Mayor a Menor</option>
+    </select>
+</div>
 
     <!-- Sección de productos -->
-    <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div id="productos-container" class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         @forelse ($productos as $producto)
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex flex-col items-center text-center">
                 <!-- Carrusel de imágenes -->
@@ -48,31 +44,30 @@
                 </div>
 
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">{{ $producto->nombre }}</h2>
-                
+
                 <!-- Especificaciones técnicas -->
                 <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">Especificaciones técnicas:</p>
                 <p class="text-gray-900 dark:text-white mb-2">{{ $producto->descripcion }}</p>
-                
+
                 <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg"><strong>Precio:</strong> ${{ number_format($producto->precio, 0, ',', '.') }}</p>
                 <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> {{ $producto->stock }}</p>
-                
+
                 <!-- Agregar al carrito -->
                 <form action="{{ route('carrito.agregar', $producto->id) }}" method="POST" class="add-to-cart-form">
                     @csrf
                     <label for="cantidad" class="block text-sm font-semibold text-gray-900 dark:text-white">Cantidad</label>
-                    <input type="number" name="cantidad" value="1" min="1" max="{{ $producto->stock }}" class="w-16 p-2 border rounded-md text-center cantidad-input" required>
-                    
+                    <input type="number" name="cantidad" value="1" min="1" max="{{ $producto->stock }}" class="w-16 p-2 border rounded-md text-center cantidad-input bg-white text-black dark:bg-gray-800 dark:text-white dark:border-gray-700" required>
+
                     @auth
                         <button type="submit" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
                             Agregar al carrito
                         </button>
                     @else
                         <button type="button" onclick="window.location.href='{{ route('login') }}'" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
-                            Agregar al carrito
+                            Inicia sesión para comprar
                         </button>
                     @endauth
                 </form>
-
             </div>
         @empty
             <p class="text-center text-gray-700 dark:text-gray-300">No hay productos disponibles en esta categoría.</p>
@@ -158,78 +153,6 @@
     </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams(url.search);
-
-    // Si la URL no tiene los valores correctos, redirige a los valores predeterminados
-    if (!params.has('categoria') || params.get('categoria') === '' || !params.has('precio')) {
-        window.location.replace("http://127.0.0.1:8000/catalogo?categoria=todos&precio=");
-    }
-});
-    document.addEventListener('DOMContentLoaded', function() {
-        const url = new URL(window.location.href);
-        const params = new URLSearchParams(url.search);
-
-        // Si la URL no tiene los valores predeterminados, forzar la redirección
-        if (!params.has('categoria') || params.get('categoria') !== 'todos' || !params.has('precio')) {
-            window.location.href = "http://127.0.0.1:8000/catalogo?categoria=todos&precio=";
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', function () {
-    const forms = document.querySelectorAll('.add-to-cart-form');
-
-    forms.forEach(form => {
-        form.addEventListener('submit', function (event) {
-            event.preventDefault();
-
-            // Verificar si el usuario está autenticado usando una variable de Blade
-            let isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
-
-            if (!isAuthenticated) {
-                // Redirigir al login si no está autenticado
-                window.location.href = "{{ route('login') }}";
-                return;
-            }
-
-            // Si está autenticado, procesar la solicitud normalmente
-            const formData = new FormData(form);
-            fetch(form.action, {
-                method: 'POST',
-                body: formData,
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToastGlobal('success', 'Producto agregado al carrito.');
-                    updateCartCount(data.cart_count);
-                } else {
-                    showToastGlobal('error', data.message);
-                }
-            })
-
-                
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        });
-    });
-});
-    function applyFilters() {
-    const category = document.getElementById('categoryFilter').value;
-    const price = document.getElementById('priceFilter').value;
-
-    let url = new URL(window.location.href);
-    let params = new URLSearchParams();
-
-    if (category) params.set('category', category);
-    if (price) params.set('price', price);
-
-    window.location.href = `${url.origin}${url.pathname}?${params.toString()}`;
-}
-
-
         function showToastGlobal(type, message) {
             const toast = document.getElementById('toast-global');
             const icon = document.getElementById('toast-icon');
@@ -425,4 +348,117 @@
     });
 
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const categoriaFiltro = document.getElementById('categoriaFiltro');
+    const precioFiltro = document.getElementById('precioFiltro');
+    const contenedor = document.getElementById('productos-container');
+
+    function renderProductos(productos) {
+    const contenedor = document.getElementById('productos-container');
+    const token = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+    const isLoggedIn = document.querySelector('meta[name=user-authenticated]').getAttribute('content') === 'true';
+
+    contenedor.innerHTML = '';
+
+    if (productos.length === 0) {
+        contenedor.innerHTML = '<p class="text-center text-gray-700 dark:text-gray-300 col-span-3">No hay productos disponibles.</p>';
+        return;
+    }
+
+    // 🔁 ESTILO UNIFICADO COMO EN WELCOME Y CATÁLOGO (modo oscuro, botones, tarjetas)
+    productos.forEach(producto => {
+    const imagen = producto.imagenes.length > 0
+        ? `data:image/png;base64,${producto.imagenes[0].contenido}`
+        : '/storage/placeholder.png';
+
+    contenedor.innerHTML += `
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex flex-col items-center text-center">
+            <div class="h-64 w-full mb-4 overflow-hidden relative">
+                <img src="${imagen}" alt="Imagen de ${producto.nombre}" class="object-contain w-full h-full" style="user-select: none;">
+            </div>
+
+            <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">${producto.nombre}</h2>
+
+            <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">Especificaciones técnicas:</p>
+            <p class="text-gray-900 dark:text-white mb-2">${producto.descripcion}</p>
+
+            <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg"><strong>Precio:</strong> $${new Intl.NumberFormat('es-CO').format(producto.precio)}</p>
+            <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> ${producto.stock}</p>
+
+            <form method="POST" action="/carrito/agregar/${producto.id}" class="add-to-cart-form">
+                <input type="hidden" name="_token" value="${token}">
+                <label for="cantidad" class="block text-sm font-semibold text-gray-900 dark:text-white">Cantidad</label>
+                <input type="number" name="cantidad" value="1" min="1" max="${producto.stock}" class="w-16 p-2 border rounded-md text-center cantidad-input bg-white text-black dark:bg-gray-800 dark:text-white dark:border-gray-700" required>
+
+                ${isLoggedIn
+                    ? `<button type="submit" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
+                        Agregar al carrito
+                    </button>`
+                    : `<button type="button" onclick="window.location.href='/login'" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">
+                        Inicia sesión para comprar
+                    </button>`
+                }
+            </form>
+        </div>
+    `;
+});
+
+    volverAVincularFormularios();
+}
+
+    function volverAVincularFormularios() {
+        const forms = document.querySelectorAll('.add-to-cart-form');
+
+        forms.forEach(form => {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                const formData = new FormData(form);
+                const action = form.action;
+
+                fetch(action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToastGlobal('success', 'Producto agregado al carrito.');
+                        updateCartCount(data.cart_count);
+                    } else {
+                        showToastGlobal('error', data.message || 'Error al agregar.');
+                    }
+                })
+                .catch(() => {
+                    showToastGlobal('error', 'Error al conectar con el servidor.');
+                });
+            });
+        });
+    }
+
+
+    async function filtrarProductos() {
+        const categoria = categoriaFiltro.value;
+        const precio = precioFiltro.value;
+
+        try {
+            const response = await fetch(`/api/catalogo/filtrar?categoria=${categoria}&precio=${precio}`);
+            const data = await response.json();
+            renderProductos(data);
+        } catch (error) {
+            console.error('Error al filtrar productos:', error);
+        }
+    }
+
+    categoriaFiltro.addEventListener('change', filtrarProductos);
+    precioFiltro.addEventListener('change', filtrarProductos);
+});
+</script>
+
 @endsection

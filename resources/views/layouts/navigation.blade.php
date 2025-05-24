@@ -127,10 +127,10 @@
             @endguest
 
             @auth
-                <x-nav-link :href="route('profile.edit')" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">Perfil</x-nav-link>
+                <x-nav-link :href="route('profile.edit')" class="text-gray-6000 dark:text-gray-2000 hover:text-gray-8000 dark:hover:text-white">Perfil</x-nav-link>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <x-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
+                    <x-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="text-gray-6000 dark:text-gray-2000 hover:text-gray-8000 dark:hover:text-white">
                         Cerrar sesión
                     </x-nav-link>
                 </form>

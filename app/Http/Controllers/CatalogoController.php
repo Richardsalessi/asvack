@@ -35,4 +35,25 @@ class CatalogoController extends Controller
             'precioSeleccionado' => $precioSeleccionado
         ]);
     }
+    
+        public function filtrar(Request $request)
+    {
+        $categoria = $request->query('categoria');
+        $precio = $request->query('precio');
+
+        $productos = Producto::with('imagenes');
+
+        if ($categoria !== 'todos') {
+            $productos->where('categoria_id', $categoria);
+        }
+
+        if ($precio === 'menor') {
+            $productos->orderBy('precio', 'asc');
+        } elseif ($precio === 'mayor') {
+            $productos->orderBy('precio', 'desc');
+        }
+
+        return response()->json($productos->get());
+    }
+
 }

@@ -86,7 +86,10 @@ Route::middleware(['auth'])->get('/checkout', function () {
     return view('checkout');  // Crea una vista para el checkout
 })->name('checkout');
 
+// Ruta para catalogo
 Route::get('/catalogo', [CatalogoController::class, 'index'])->name('catalogo');
+// Ruta AJAX para filtrar productos dinámicamente
+Route::get('/api/catalogo/filtrar', [CatalogoController::class, 'filtrar'])->name('catalogo.filtrar');
 
 // Cargar rutas de autenticación predeterminadas de Laravel
 require __DIR__.'/auth.php';

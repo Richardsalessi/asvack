@@ -48,19 +48,19 @@
                     @endif
                 </div>
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">{{ $producto->nombre }}</h2>
-                
+
                 <!-- Especificaciones técnicas -->
                 <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">Especificaciones técnicas:</p>
                 <p class="text-gray-900 dark:text-white mb-2">{{ $producto->descripcion }}</p>
-                
+
                 <p class="text-gray-900 dark:text-white mt-2 font-bold text-lg"><strong>Precio:</strong> ${{ number_format($producto->precio, 0, ',', '.') }}</p>
                 <p class="text-gray-900 dark:text-white mb-2"><strong>Unidades disponibles:</strong> {{ $producto->stock }}</p>
-                
-                <!-- Formulario de agregar al carrito con validación de autenticación -->
-                <form action="{{ route('carrito.agregar', $producto->id) }}" method="POST" id="add-to-cart-form-{{ $producto->id }}" class="add-to-cart-form">
+
+                <!-- Agregar al carrito -->
+                <form action="{{ route('carrito.agregar', $producto->id) }}" method="POST" class="add-to-cart-form">
                     @csrf
                     <label for="cantidad" class="block text-sm font-semibold text-gray-900 dark:text-white">Cantidad</label>
-                    <input type="number" id="cantidad-{{ $producto->id }}" name="cantidad" value="1" min="1" max="{{ $producto->stock }}" class="w-16 p-2 border rounded-md text-center" required>
+                    <input type="number" name="cantidad" value="1" min="1" max="{{ $producto->stock }}" class="w-16 p-2 border rounded-md text-center cantidad-input bg-white text-black dark:bg-gray-800 dark:text-white dark:border-gray-700" required>
 
                     @auth
                         <button type="submit" class="w-full mt-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-200">

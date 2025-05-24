@@ -5,31 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'Asvack') }}</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
-    <!-- Scripts -->
+    <!-- Scripts y estilos locales con Vite -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Alpine.js -->
     <script src="https://unpkg.com/alpinejs" defer></script>
 
-    <!-- Aplicar el tema desde el principio para evitar FOUC -->
+    <!-- Activar darkMode desde el inicio -->
     <script>
         (function() {
             const darkMode = localStorage.getItem('darkMode') === 'true';
-            if (darkMode) {
-                document.documentElement.classList.add('dark');
-            }
-            // Evitar mostrar contenido sin estilizar
+            if (darkMode) document.documentElement.classList.add('dark');
             document.documentElement.style.visibility = 'hidden';
         })();
     </script>
 
-    <!-- Estilo para ocultar el contenido hasta que la página esté lista -->
+    <!-- Estilo para ocultar el contenido hasta que cargue -->
     <style>
         body {
             transition: opacity 0.3s ease-in-out;

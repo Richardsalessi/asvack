@@ -7,3 +7,10 @@
         <button id="modalNext" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center z-20" style="display: none; user-select: none;">&#8250;</button>
     </div>
 </div>
+
+<!-- TOAST ÚNICO REUTILIZABLE -->
+<div id="toast-global" class="fixed bottom-5 right-5 text-white p-4 rounded-md shadow-lg opacity-0 transition-opacity duration-300 z-50 flex items-center gap-2"
+    style="min-width: 300px;">
+    <span id="toast-icon">✅</span>
+    <span id="toast-text">Mensaje genérico</span>
+</div>

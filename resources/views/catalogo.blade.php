@@ -107,39 +107,78 @@
     </style>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function () {
+    const forms = document.querySelectorAll('.add-to-cart-form');
+
+    forms.forEach(form => {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            // Verificar si el usuario está autenticado usando una variable de Blade
+            let isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
+
+            if (!isAuthenticated) {
+                // Redirigir al login si no está autenticado
+                window.location.href = "{{ route('login') }}";
+                return;
+            }
+
+            // Si está autenticado, procesar la solicitud normalmente
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToastGlobal('success', 'Producto agregado al carrito.');
+                        updateCartCount(data.cart_count);
+                    } else {
+                        showToastGlobal('error', data.message);
+                    }
+                })
+                
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    });
+});
+
         function showToastGlobal(type, message) {
-            const toast = document.getElementById('toast-global');
-            const icon = document.getElementById('toast-icon');
-            const text = document.getElementById('toast-text');
+        const toast = document.getElementById('toast-global');
+        const icon = document.getElementById('toast-icon');
+        const text = document.getElementById('toast-text');
 
-            if (type === 'success') {
-                toast.classList.remove('bg-red-600');
-                toast.classList.add('bg-green-600');
-                icon.textContent = '✅';
-            } else {
-                toast.classList.remove('bg-green-600');
-                toast.classList.add('bg-red-600');
-                icon.textContent = '⚠️';
-            }
-
-            text.textContent = message;
-
-            toast.classList.remove('opacity-0');
-            toast.classList.add('opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0');
-            }, 3500);
+        if (type === 'success') {
+            toast.classList.remove('bg-red-600');
+            toast.classList.add('bg-green-600');
+            icon.textContent = '✅';
+        } else {
+            toast.classList.remove('bg-green-600');
+            toast.classList.add('bg-red-600');
+            icon.textContent = '⚠️';
         }
 
+        text.textContent = message;
 
-        function updateCartCount(count) {
-            const cartCount = document.querySelector('#cart-count');
-            if (cartCount) {
-                cartCount.innerText = count;
-            }
+        toast.classList.remove('opacity-0');
+        toast.classList.add('opacity-100');
+
+        setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            toast.classList.add('opacity-0');
+        }, 3500);
+    }
+
+    function updateCartCount(count) {
+        const cartCount = document.querySelector('#cart-count');
+        if (cartCount) {
+            cartCount.innerText = count;
         }
+    }
+
 </script>
 
 <script>

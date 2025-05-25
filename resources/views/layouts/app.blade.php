@@ -196,6 +196,9 @@
         }
     });
 </script>
+<!-- AQUI AGREGA ESTO -->
+    @yield('scripts')
+
 
 </body>
 </html>

@@ -101,40 +101,51 @@ class CarritoController extends Controller
         ]);
     }
 
-    // Quitar una cantidad específica
-    public function quitar(Request $request, $id)
-    {
-        $carrito = session()->get('carrito', []);
+        // Quitar una cantidad específica
+        public function quitar(Request $request, $id)
+{
+    $carrito = session()->get('carrito', []);
+    $cantidadARestar = (int) $request->input('cantidad', 1);
+    $removido = false;
+    $nuevaCantidad = 0;
+    $totalIndividual = 0;
 
-        if (isset($carrito[$id])) {
-            $cantidadARestar = $request->cantidad;
-            $carrito[$id]['cantidad'] -= $cantidadARestar;
+    if (isset($carrito[$id])) {
+        $carrito[$id]['cantidad'] -= $cantidadARestar;
 
-            if ($carrito[$id]['cantidad'] <= 0) {
-                unset($carrito[$id]);
-            }
-
-            session()->put('carrito', $carrito);
-        }
-
-        $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
-        $total = 0;
-        foreach ($carrito as $item) {
-            $total += $item['precio'] * $item['cantidad'];
-        }
-
-        if ($totalUnidades == 0) {
-            session()->forget('cart_count');
+        if ($carrito[$id]['cantidad'] <= 0) {
+            unset($carrito[$id]);
+            $removido = true;
         } else {
-            session()->put('cart_count', $totalUnidades);
+            $nuevaCantidad = $carrito[$id]['cantidad'];
+            $totalIndividual = '$' . number_format($carrito[$id]['precio'] * $nuevaCantidad, 2, ',', '.');
         }
 
-        return response()->json([
-            'success' => true,
-            'cart_count' => $totalUnidades,
-            'total_formateado' => '$' . number_format($nuevoTotal, 2, ',', '.'),
-            'total_raw' => $nuevoTotal,
-            'message' => 'Producto eliminado del carrito'
-        ]);
+        session()->put('carrito', $carrito);
     }
+
+    $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
+    $total = 0;
+    foreach ($carrito as $item) {
+        $total += $item['precio'] * $item['cantidad'];
+    }
+
+    if ($totalUnidades == 0) {
+        session()->forget('cart_count');
+    } else {
+        session()->put('cart_count', $totalUnidades);
+    }
+
+    return response()->json([
+        'success' => true,
+        'removido' => $removido,
+        'nueva_cantidad' => $nuevaCantidad,
+        'total_individual' => $totalIndividual,
+        'cart_count' => $totalUnidades,
+        'total_formateado' => '$' . number_format($total, 2, ',', '.'),
+        'total_raw' => $total,
+        'message' => 'Cantidad actualizada'
+    ]);
+}
+
 }

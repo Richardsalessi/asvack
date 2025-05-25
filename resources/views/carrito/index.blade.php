@@ -25,15 +25,20 @@
                             <img src="{{ $producto['imagen'] }}" alt="{{ $producto['nombre'] }}" class="w-full h-full object-contain rounded-md">
                         </div>
 
-                        <div class="cart-item-details">
+                        <div class="cart-item-details" id="detalle-{{ $id }}">
                             <div class="cart-item-name font-semibold text-gray-900 dark:text-white">{{ $producto['nombre'] }}</div>
                             <div class="cart-item-price text-gray-700 dark:text-gray-300">Precio: ${{ number_format($producto['precio'], 2, ',', '.') }}</div>
-                            <div class="cart-item-quantity text-gray-500 dark:text-gray-400">Cantidad: {{ $producto['cantidad'] }}</div>
-                            <div class="cart-item-total text-gray-900 dark:text-white font-bold">Total: ${{ number_format($producto['total'], 2, ',', '.') }}</div>
+                            <div class="cart-item-quantity text-gray-500 dark:text-gray-400">Cantidad: <span class="cantidad-text">{{ $producto['cantidad'] }}</span></div>
+                            <div class="cart-item-total text-gray-900 dark:text-white font-bold">Total: $<span class="total-individual">{{ number_format($producto['total'], 2, ',', '.') }}</span></div>
                         </div>
                     </div>
 
-                    <div class="cart-item-actions">
+                    <div class="cart-item-actions flex flex-col gap-2 items-end">
+                        <form class="quitar-form flex items-center space-x-2" data-id="{{ $id }}">
+                            <input type="number" name="cantidad" min="1" max="{{ $producto['cantidad'] }}" value="1" class="w-16 px-2 py-1 border rounded dark:bg-gray-700 dark:text-white text-center">
+                            <button type="submit" class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 transition">Quitar</button>
+                        </form>
+
                         <button class="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition duration-200 delete-button" data-id="{{ $id }}">
                             Eliminar
                         </button>
@@ -46,9 +51,8 @@
             <div>
                 <strong class="text-xl text-gray-900 dark:text-white">Total:</strong>
                 <span id="checkout-total" class="text-lg text-gray-900 dark:text-white" data-total="{{ $total }}">
-                ${{ number_format($total, 2, ',', '.') }}
-            </span>
-
+                    ${{ number_format($total, 2, ',', '.') }}
+                </span>
             </div>
             <a href="{{ route('checkout') }}" class="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700 transition duration-300">
                 Proceder a la compra
@@ -83,31 +87,68 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const productItem = document.getElementById(`cart-item-${productId}`);
-                    if (productItem) productItem.remove();
+                    document.getElementById(`cart-item-${productId}`)?.remove();
 
-                    // Actualiza el total visual del carrito
-                    const totalSpan = document.getElementById('checkout-total');
-                    if (totalSpan && data.total_formateado) {
-                        totalSpan.textContent = data.total_formateado;
-                        totalSpan.setAttribute('data-total', data.total_raw);
-                    }
+                    actualizarTotal(data);
+                    updateCartCount(data.cart_count);
+                    showToast('Producto eliminado del carrito.');
 
-                    // Si el carrito queda vacío
                     if (data.cart_count === 0) {
                         document.querySelector('#carrito-items').innerHTML =
                             '<p class="text-gray-900 dark:text-white">No tienes productos en tu carrito.</p>';
                     }
-
-                    updateCartCount(data.cart_count);
-                    showToast('Producto eliminado del carrito.');
-                } else {
-                    alert('Error al eliminar el producto');
                 }
-            })
-            .catch(error => console.error('Error:', error));
+            });
         });
     });
+
+    document.querySelectorAll('.quitar-form').forEach(form => {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const productId = this.getAttribute('data-id');
+            const cantidad = parseInt(this.querySelector('input[name="cantidad"]').value);
+
+            if (!cantidad || cantidad < 1) return;
+
+            fetch(`/carrito/quitar/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ cantidad: cantidad })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.removido) {
+                        document.getElementById(`cart-item-${productId}`)?.remove();
+                    } else {
+                        const card = document.querySelector(`#detalle-${productId}`);
+                        card.querySelector('.cantidad-text').textContent = data.nueva_cantidad;
+                        card.querySelector('.total-individual').textContent = data.total_individual;
+                    }
+
+                    actualizarTotal(data);
+                    updateCartCount(data.cart_count);
+                    showToast('Cantidad actualizada.');
+
+                    if (data.cart_count === 0) {
+                        document.querySelector('#carrito-items').innerHTML =
+                            '<p class="text-gray-900 dark:text-white">No tienes productos en tu carrito.</p>';
+                    }
+                }
+            });
+        });
+    });
+
+    function actualizarTotal(data) {
+        const totalSpan = document.getElementById('checkout-total');
+        if (totalSpan && data.total_formateado) {
+            totalSpan.textContent = data.total_formateado;
+            totalSpan.setAttribute('data-total', data.total_raw);
+        }
+    }
 
     function updateCartCount(count) {
         const badge = document.querySelector('#cart-count');

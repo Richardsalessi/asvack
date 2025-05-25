@@ -79,7 +79,14 @@ Route::middleware('auth')->group(function () {
 
     // Ruta para eliminar productos del carrito
     Route::delete('/carrito/eliminar/{id}', [CarritoController::class, 'eliminar'])->name('carrito.eliminar');
+
+    // Ruta para eliminar unidad de un producto del carrito
+    Route::post('/carrito/quitar/{id}', [CarritoController::class, 'quitar'])->name('carrito.quitar');
+
 });
+
+
+
 
 // Ruta para el checkout
 Route::middleware(['auth'])->get('/checkout', function () {
@@ -90,6 +97,7 @@ Route::middleware(['auth'])->get('/checkout', function () {
 Route::get('/catalogo', [CatalogoController::class, 'index'])->name('catalogo');
 // Ruta AJAX para filtrar productos dinámicamente
 Route::get('/api/catalogo/filtrar', [CatalogoController::class, 'filtrar'])->name('catalogo.filtrar');
+
 
 // Cargar rutas de autenticación predeterminadas de Laravel
 require __DIR__.'/auth.php';

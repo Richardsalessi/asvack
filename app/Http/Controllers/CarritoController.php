@@ -118,7 +118,7 @@ class CarritoController extends Controller
             $removido = true;
         } else {
             $nuevaCantidad = $carrito[$id]['cantidad'];
-            $totalIndividual = '$' . number_format($carrito[$id]['precio'] * $nuevaCantidad, 2, ',', '.');
+            $totalIndividual = number_format($carrito[$id]['precio'] * $nuevaCantidad, 2, ',', '.');
         }
 
         session()->put('carrito', $carrito);

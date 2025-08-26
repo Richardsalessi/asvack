@@ -253,75 +253,79 @@
 
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const descModal = document.getElementById('descModal');
-        const descModalContent = document.getElementById('descModalContent');
-        const openDescModalButtons = document.querySelectorAll('.open-desc-modal');
-        const descContent = document.getElementById('descContent');
-        const closeDescModalButton = document.getElementById('closeDescModal');
+document.addEventListener('DOMContentLoaded', function () {
+    // ----- MODAL DESCRIPCIÓN -----
+    const descModal = document.getElementById('descModal');
+    const descModalContent = document.getElementById('descModalContent'); // existe ahora
+    const openDescModalButtons = document.querySelectorAll('.open-desc-modal');
+    const descContent = document.getElementById('descContent');
+    const closeDescModalButton = document.getElementById('closeDescModal');
 
-        const imageModal = document.getElementById('imageModal');
-        const modalImage = document.getElementById('modalImage');
-        const closeModalButton = document.getElementById('closeModal');
-
-        // Abrir el modal de descripción
-        openDescModalButtons.forEach(button => {
-            button.addEventListener('click', function (e) {
-                e.preventDefault();
-                descContent.textContent = button.getAttribute('data-description');
-                descModal.classList.remove('modal-hidden');
-                descModalContent.classList.add('translate-y-0', 'opacity-100');
-            });
+    openDescModalButtons.forEach(button => {
+        button.addEventListener('click', function (e) {
+            e.preventDefault();
+            descContent.textContent = button.getAttribute('data-description') || '';
+            descModal.classList.remove('hidden');
+            descModal.classList.add('flex');
+            if (descModalContent) descModalContent.classList.add('translate-y-0', 'opacity-100');
         });
+    });
 
-        closeDescModalButton.addEventListener('click', function () {
-            descModal.classList.add('modal-hidden');
-            descModalContent.classList.remove('translate-y-0', 'opacity-100');
+    closeDescModalButton.addEventListener('click', function () {
+        descModal.classList.add('hidden');
+        descModal.classList.remove('flex');
+        if (descModalContent) descModalContent.classList.remove('translate-y-0', 'opacity-100');
+    });
+
+    descModal.addEventListener('click', function (e) {
+        if (e.target === descModal) {
+            descModal.classList.add('hidden');
+            descModal.classList.remove('flex');
+            if (descModalContent) descModalContent.classList.remove('translate-y-0', 'opacity-100');
+        }
+    });
+
+    // ----- MODAL IMAGEN -----
+    const imageModal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const closeModalButton = document.getElementById('closeModal');
+
+    document.querySelectorAll('.open-modal').forEach(button => {
+        button.addEventListener('click', function (e) {
+            e.preventDefault();
+            modalImage.src = button.getAttribute('data-image-url') || '';
+            imageModal.classList.remove('hidden');
+            imageModal.classList.add('flex');
         });
+    });
 
-        descModal.addEventListener('click', function (e) {
-            if (e.target === descModal) {
-                descModal.classList.add('modal-hidden');
-                descModalContent.classList.remove('translate-y-0', 'opacity-100');
-            }
-        });
+    closeModalButton.addEventListener('click', function () {
+        imageModal.classList.add('hidden');
+        imageModal.classList.remove('flex');
+        modalImage.src = '';
+    });
 
-        // Abrir el modal de imagen
-        document.querySelectorAll('.open-modal').forEach(button => {
-            button.addEventListener('click', function (e) {
-                e.preventDefault();
-                modalImage.src = button.getAttribute('data-image-url');
-                imageModal.classList.remove('hidden');
-                imageModal.classList.add('flex');
-            });
-        });
-
-        closeModalButton.addEventListener('click', function () {
+    imageModal.addEventListener('click', function (e) {
+        if (e.target === imageModal) {
             imageModal.classList.add('hidden');
             imageModal.classList.remove('flex');
-        });
+            modalImage.src = '';
+        }
+    });
 
-        imageModal.addEventListener('click', function (e) {
-            if (e.target === imageModal) {
-                imageModal.classList.add('hidden');
-                imageModal.classList.remove('flex');
-            }
-        });
-
-        const backToTopButton = document.getElementById('backToTopButton');
+    // ----- Back to top (si existe) -----
+    const backToTopButton = document.getElementById('backToTopButton');
+    if (backToTopButton) {
         backToTopButton.addEventListener('click', function (e) {
             e.preventDefault();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
-
         window.addEventListener('scroll', function () {
-            if (window.scrollY > 200) {
-                backToTopButton.classList.remove('hidden');
-            } else {
-                backToTopButton.classList.add('hidden');
-            }
+            if (window.scrollY > 200) backToTopButton.classList.remove('hidden');
+            else backToTopButton.classList.add('hidden');
         });
-    });
+    }
+});
 </script>
 
 <style>

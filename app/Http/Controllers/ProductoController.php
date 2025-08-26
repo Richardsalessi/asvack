@@ -5,28 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Producto;
 use App\Models\Imagen;
 use App\Models\Categoria;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class ProductoController extends Controller
 {
     public function index(Request $request)
     {
-        // Obtener solo los administradores para el filtro
-        $administradores = User::whereHas('roles', function ($query) {
-            $query->where('name', 'admin');
-        })->get();
-
         // Obtener todas las categorías para el filtro
         $categorias = Categoria::all();
 
         // Construir la consulta de productos
         $query = Producto::with('imagenes', 'categoria');
-
-        if ($request->filled('admin')) {
-            $query->where('user_id', $request->admin);
-        }
 
         if ($request->filled('categoria')) {
             $query->where('categoria_id', $request->categoria);
@@ -42,9 +31,8 @@ class ProductoController extends Controller
 
         $productos = $query->get();
 
-        return view('admin.productos.index', compact('productos', 'administradores', 'categorias'));
+        return view('admin.productos.index', compact('productos', 'categorias'));
     }
-
 
     public function create()
     {
@@ -73,7 +61,6 @@ class ProductoController extends Controller
             'precio' => $request->precio,
             'categoria_id' => $request->categoria_id,
             'stock' => $request->stock,
-            'user_id' => Auth::id(),
         ]);
 
         if ($request->hasFile('imagenes')) {

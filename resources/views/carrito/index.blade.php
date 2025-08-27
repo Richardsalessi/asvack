@@ -25,14 +25,17 @@
                         <div class="w-56" data-thumbs="cart-{{ $id }}">
                             @php
                                 $imgs = $producto['imagenes'] ?? [];
+                                $thumbCount = max(count($imgs), 1);
                             @endphp
 
                             <div class="relative">
+                                @if($thumbCount > 1)
                                 <button type="button"
                                     class="thumb-prev absolute -left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white grid place-items-center z-10"
                                     aria-label="Anterior">‹</button>
+                                @endif
 
-                                <div class="thumbs-track flex gap-2 overflow-x-auto scroll-smooth no-scrollbar px-8"
+                                <div class="thumbs-track flex gap-2 overflow-x-auto scroll-smooth no-scrollbar {{ $thumbCount > 1 ? 'px-8' : 'justify-center' }}"
                                      data-thumbs-track>
                                     @forelse($imgs as $i => $src)
                                         <img
@@ -49,9 +52,11 @@
                                     @endforelse
                                 </div>
 
+                                @if($thumbCount > 1)
                                 <button type="button"
                                     class="thumb-next absolute -right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white grid place-items-center z-10"
                                     aria-label="Siguiente">›</button>
+                                @endif
                             </div>
                         </div>
 
@@ -78,17 +83,17 @@
             @endforeach
         </div>
 
-            <div id="checkout-section" class="mt-6 flex justify-between items-center">
-        <div>
-            <strong class="text-xl text-gray-900 dark:text-white">Total:</strong>
-            <span id="checkout-total" class="text-lg text-gray-900 dark:text-white" data-total="{{ $total }}">
-                ${{ number_format($total, 2, ',', '.') }}
-            </span>
+        <div id="checkout-section" class="mt-6 flex justify-between items-center">
+            <div>
+                <strong class="text-xl text-gray-900 dark:text-white">Total:</strong>
+                <span id="checkout-total" class="text-lg text-gray-900 dark:text-white" data-total="{{ $total }}">
+                    ${{ number_format($total, 2, ',', '.') }}
+                </span>
+            </div>
+            <a id="checkout-btn" href="{{ route('checkout') }}" class="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700 transition duration-300">
+                Proceder a la compra
+            </a>
         </div>
-        <a id="checkout-btn" href="{{ route('checkout') }}" class="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700 transition duration-300">
-            Proceder a la compra
-        </a>
-    </div>
 
     @else
         <p class="text-gray-900 dark:text-white">No tienes productos en tu carrito.</p>
@@ -122,24 +127,19 @@ document.addEventListener('DOMContentLoaded', function () {
     // ======================
     // Eliminar / Quitar
     // ======================
-    // ⬇️ usa tu mismo id; si no existiera, intenta deducir el contenedor a partir de #checkout-total
     const checkoutSection = document.getElementById('checkout-section')
         || document.getElementById('checkout-total')?.closest('.mt-6')
         || document.getElementById('checkout-total')?.parentElement?.parentElement;
     const checkoutTotal   = document.getElementById('checkout-total');
     const deleteButtons   = document.querySelectorAll('.delete-button');
 
-    // ⬇️ SOLO controla visibilidad cuando el carrito queda vacío (no toca tu lógica)
     function toggleCheckoutUI(cartCount) {
         if (cartCount === 0) {
-            // oculta fila de total + botón
             checkoutSection?.classList.add('hidden');
-            // pinta total en cero por si quedaba un valor anterior
             if (checkoutTotal) {
                 checkoutTotal.textContent = '$0,00';
                 checkoutTotal.setAttribute('data-total', '0');
             }
-            // mensaje vacío
             const cont = document.querySelector('#carrito-items');
             if (cont) cont.innerHTML = '<p class="text-gray-900 dark:text-white">No tienes productos en tu carrito.</p>';
         } else {
@@ -162,12 +162,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (data.success) {
                     document.getElementById(`cart-item-${productId}`)?.remove();
-
-                    actualizarTotal(data);     // ⬅️ tu función
-                    updateCartCount(data.cart_count); // ⬅️ tu función
-                    showToast('Producto eliminado del carrito.'); // ⬅️ tu función
-
-                    // ⬇️ NUEVO: ocultar/mostrar total+botón si quedó vacío
+                    actualizarTotal(data);
+                    updateCartCount(data.cart_count);
+                    showToast('Producto eliminado del carrito.');
                     toggleCheckoutUI(data.cart_count);
                 }
             });
@@ -179,7 +176,6 @@ document.addEventListener('DOMContentLoaded', function () {
             event.preventDefault();
             const productId = this.getAttribute('data-id');
             const cantidad = parseInt(this.querySelector('input[name="cantidad"]').value);
-
             if (!cantidad || cantidad < 1) return;
 
             fetch(`/carrito/quitar/${productId}`, {
@@ -200,12 +196,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         card.querySelector('.cantidad-text').textContent = data.nueva_cantidad;
                         card.querySelector('.total-individual').textContent = data.total_individual;
                     }
-
-                    actualizarTotal(data);           // ⬅️ tu función
-                    updateCartCount(data.cart_count); // ⬅️ tu función
-                    showToast('Cantidad actualizada.'); // ⬅️ tu función
-
-                    // ⬇️ NUEVO: ocultar/mostrar total+botón si quedó vacío
+                    actualizarTotal(data);
+                    updateCartCount(data.cart_count);
+                    showToast('Cantidad actualizada.');
                     toggleCheckoutUI(data.cart_count);
                 }
             });
@@ -292,9 +285,15 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
 
-        const step = 120;
-        btnP.addEventListener('click', () => track.scrollBy({ left: -step, behavior: 'smooth' }));
-        btnN.addEventListener('click', () => track.scrollBy({ left:  step, behavior: 'smooth' }));
+        // 🔹 solo si hay más de 1 thumb activamos flechas
+        if (thumbs.length <= 1) {
+            btnP && (btnP.style.display = 'none');
+            btnN && (btnN.style.display = 'none');
+        } else {
+            const step = 120;
+            btnP?.addEventListener('click', () => track.scrollBy({ left: -step, behavior: 'smooth' }));
+            btnN?.addEventListener('click', () => track.scrollBy({ left:  step, behavior: 'smooth' }));
+        }
     });
 });
 </script>

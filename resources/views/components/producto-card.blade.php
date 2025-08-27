@@ -142,18 +142,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dots
     dots.forEach((d, k) => d.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); idx = k; paint(idx); }));
 
-    // Miniaturas (cambian y abren modal)
+    // Miniaturas (solo cambian la imagen, NO abren modal)
     thumbs.forEach((t) => {
       t.addEventListener('click', (e) => {
         e.preventDefault(); e.stopPropagation();
         idx = parseInt(t.dataset.index, 10) || 0;
-        paint(idx);
-        // abrir modal sincronizado
-        if (window.__openImageFromSlider) {
-          window.__openImageFromSlider({ slides, paint, getIdx, setIdx, startAuto, stopAuto }, idx);
-        }
+        paint(idx);              // cambia la imagen del carrusel
+        // sin modal aquí
       });
     });
+
 
     // Click en imagen grande -> abrir modal sincronizado
     slider.addEventListener('click', (e) => {

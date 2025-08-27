@@ -122,9 +122,30 @@ document.addEventListener('DOMContentLoaded', function () {
     // ======================
     // Eliminar / Quitar
     // ======================
-    const checkoutSection = document.getElementById('checkout-section');
+    // ⬇️ usa tu mismo id; si no existiera, intenta deducir el contenedor a partir de #checkout-total
+    const checkoutSection = document.getElementById('checkout-section')
+        || document.getElementById('checkout-total')?.closest('.mt-6')
+        || document.getElementById('checkout-total')?.parentElement?.parentElement;
     const checkoutTotal   = document.getElementById('checkout-total');
-    const deleteButtons = document.querySelectorAll('.delete-button');
+    const deleteButtons   = document.querySelectorAll('.delete-button');
+
+    // ⬇️ SOLO controla visibilidad cuando el carrito queda vacío (no toca tu lógica)
+    function toggleCheckoutUI(cartCount) {
+        if (cartCount === 0) {
+            // oculta fila de total + botón
+            checkoutSection?.classList.add('hidden');
+            // pinta total en cero por si quedaba un valor anterior
+            if (checkoutTotal) {
+                checkoutTotal.textContent = '$0,00';
+                checkoutTotal.setAttribute('data-total', '0');
+            }
+            // mensaje vacío
+            const cont = document.querySelector('#carrito-items');
+            if (cont) cont.innerHTML = '<p class="text-gray-900 dark:text-white">No tienes productos en tu carrito.</p>';
+        } else {
+            checkoutSection?.classList.remove('hidden');
+        }
+    }
 
     deleteButtons.forEach(button => {
         button.addEventListener('click', function (event) {
@@ -142,16 +163,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.success) {
                     document.getElementById(`cart-item-${productId}`)?.remove();
 
-                    actualizarTotal(data);
-                    updateCartCount(data.cart_count);
-                    showToast('Producto eliminado del carrito.');
-                    
-                    
+                    actualizarTotal(data);     // ⬅️ tu función
+                    updateCartCount(data.cart_count); // ⬅️ tu función
+                    showToast('Producto eliminado del carrito.'); // ⬅️ tu función
 
-                    if (data.cart_count === 0) {
-                        document.querySelector('#carrito-items').innerHTML =
-                            '<p class="text-gray-900 dark:text-white">No tienes productos en tu carrito.</p>';
-                    }
+                    // ⬇️ NUEVO: ocultar/mostrar total+botón si quedó vacío
+                    toggleCheckoutUI(data.cart_count);
                 }
             });
         });
@@ -184,14 +201,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         card.querySelector('.total-individual').textContent = data.total_individual;
                     }
 
-                    actualizarTotal(data);
-                    updateCartCount(data.cart_count);
-                    showToast('Cantidad actualizada.');
+                    actualizarTotal(data);           // ⬅️ tu función
+                    updateCartCount(data.cart_count); // ⬅️ tu función
+                    showToast('Cantidad actualizada.'); // ⬅️ tu función
 
-                    if (data.cart_count === 0) {
-                        document.querySelector('#carrito-items').innerHTML =
-                            '<p class="text-gray-900 dark:text-white">No tienes productos en tu carrito.</p>';
-                    }
+                    // ⬇️ NUEVO: ocultar/mostrar total+botón si quedó vacío
+                    toggleCheckoutUI(data.cart_count);
                 }
             });
         });
@@ -263,7 +278,6 @@ document.addEventListener('DOMContentLoaded', function () {
     btnPrev?.addEventListener('click', (e)=>{ e.stopPropagation(); showByIndex(currentIndex - 1); });
     btnNext?.addEventListener('click', (e)=>{ e.stopPropagation(); showByIndex(currentIndex + 1); });
 
-    // Inicializa todos los “thumb sliders” (solo miniaturas)
     document.querySelectorAll('[data-thumbs]').forEach((wrap) => {
         const track = wrap.querySelector('[data-thumbs-track]');
         const btnP  = wrap.querySelector('.thumb-prev');
@@ -271,16 +285,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const thumbs = Array.from(wrap.querySelectorAll('.thumb-item'));
         const imagesSrc = thumbs.map(t => t.src);
 
-        // abrir modal al click de cualquier miniatura
-        thumbs.forEach((t, k) => {
+        thumbs.forEach((t) => {
             t.addEventListener('click', (e) => {
                 e.preventDefault();
                 openModal(t.src, imagesSrc);
             });
         });
 
-        // desplazar el contenedor (muestra ~3 por ancho)
-        const step = 120; // px por “clic” aprox. una miniatura
+        const step = 120;
         btnP.addEventListener('click', () => track.scrollBy({ left: -step, behavior: 'smooth' }));
         btnN.addEventListener('click', () => track.scrollBy({ left:  step, behavior: 'smooth' }));
     });

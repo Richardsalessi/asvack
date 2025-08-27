@@ -101,7 +101,7 @@
 </div>
 
 <!-- MODAL PARA DESCRIPCIÓN -->
-<div id="descModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+<div id="descModal" class="hidden fixed inset-0 bg-black bg-opacity-50 justify-center items-center">
     <div class="relative bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg max-w-lg">
         <button id="closeDescModal" class="absolute top-2 right-2 text-gray-600 dark:text-gray-300 text-xl font-bold hover:text-red-500">&times;</button>
         <p id="descContent" class="text-gray-800 dark:text-gray-300"></p>

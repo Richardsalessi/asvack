@@ -102,12 +102,12 @@
 
 {{-- Modal global para ver imágenes en grande --}}
 <div id="imageModal" class="fixed inset-0 bg-black/75 items-center justify-center z-50 hidden">
-  <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl">
+    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl">
     <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 grid place-items-center">&times;</button>
     <img id="modalImage" src="" class="w-full h-[70vh] object-contain p-4">
     <button id="modalPrev" class="absolute top-1/2 left-4 -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 grid place-items-center hidden">&#8249;</button>
     <button id="modalNext" class="absolute top-1/2 right-4 -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 grid place-items-center hidden">&#8250;</button>
-  </div>
+    </div>
 </div>
 
 <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white p-3 rounded-md shadow-lg opacity-0 transition-opacity duration-300" style="z-index: 9999;">

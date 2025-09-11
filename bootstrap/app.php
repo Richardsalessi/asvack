@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Middleware global para rutas web
+        $middleware->web([
+            \App\Http\Middleware\ClearCartIfOrderSettled::class, // 👈 agregado
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

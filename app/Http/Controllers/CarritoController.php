@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Producto;
+use App\Models\Orden;
 use Illuminate\Http\Request;
 
 class CarritoController extends Controller
@@ -11,8 +12,8 @@ class CarritoController extends Controller
     // Helpers de imágenes
     // ============================
 
-    // Todas las imágenes en base64 (para carrusel)
-    private function getImagenesBase64($id)
+    /** Devuelve todas las imágenes (base64) para el carrusel del carrito */
+    private function getImagenesBase64(int $id): array
     {
         $producto = Producto::with('imagenes')->find($id);
         if (!$producto) {
@@ -26,8 +27,8 @@ class CarritoController extends Controller
         return count($arr) ? $arr : [asset('storage/placeholder.png')];
     }
 
-    // Compat: una imagen principal (si te sirve en otras partes)
-    private function getImagenBase64($id)
+    /** Compat: imagen “principal” (no usada en el carrusel, pero útil en otras vistas) */
+    private function getImagenBase64(int $id): string
     {
         $producto = Producto::find($id);
         $imagen = $producto?->imagenes()->first();
@@ -37,60 +38,111 @@ class CarritoController extends Controller
     }
 
     // ============================
-    // Vistas / Acciones
+    // Helpers de carrito/orden
     // ============================
 
-    // Ver carrito
+    /** Recalcula total de unidades en el carrito y actualiza badge de sesión */
+    private function syncCartCount(array $carrito): int
+    {
+        $totalUnidades = array_sum(array_map(fn($it) => (int) $it['cantidad'], $carrito));
+        if ($totalUnidades <= 0) {
+            session()->forget('cart_count');
+        } else {
+            session()->put('cart_count', $totalUnidades);
+        }
+        return $totalUnidades;
+    }
+
+    /** Recalcula el total en dinero del carrito */
+    private function calcTotal(array $carrito): float
+    {
+        $total = 0.0;
+        foreach ($carrito as $item) {
+            $total += ((float) $item['precio']) * ((int) $item['cantidad']);
+        }
+        return $total;
+    }
+
+    /** Si el carrito quedó vacío, cancela la orden pendiente y limpia la sesión */
+    private function cancelarOrdenPendienteSiCarritoVacio(): void
+    {
+        $carrito = session('carrito', []);
+        if (!empty($carrito)) {
+            return; // aún hay items
+        }
+
+        $ordenId = session('orden_pendiente_id');
+        if (!$ordenId) {
+            return;
+        }
+
+        $orden = Orden::find($ordenId);
+        if ($orden && $orden->estado === 'pendiente') {
+            $orden->estado = 'cancelada';
+            $orden->save();
+        }
+
+        // Limpia el puntero para que no se re-use
+        session()->forget('orden_pendiente_id');
+    }
+
+    // ============================
+    // Vistas / Acciones públicas
+    // ============================
+
+    /** Página del carrito */
     public function index()
     {
         $carrito = session()->get('carrito', []);
 
+        // Aseguramos estructura y totales por item
         foreach ($carrito as $id => &$producto) {
-            // Asegurar arreglo de imágenes para carrusel
             if (!isset($producto['imagenes']) || !is_array($producto['imagenes']) || empty($producto['imagenes'])) {
-                $producto['imagenes'] = $this->getImagenesBase64($id);
+                $producto['imagenes'] = $this->getImagenesBase64((int) $id);
             }
-
-            // Compat: imagen "principal"
             if (!isset($producto['imagen'])) {
                 $producto['imagen'] = $producto['imagenes'][0] ?? asset('storage/placeholder.png');
             }
-
-            // Total individual
-            $producto['total'] = ((float)$producto['precio']) * ((int)$producto['cantidad']);
+            $producto['total'] = ((float) $producto['precio']) * ((int) $producto['cantidad']);
         }
         unset($producto);
 
         $total = array_sum(array_column($carrito, 'total'));
 
+        // Por si el usuario llega aquí después de vaciar (refresco / otra pestaña)
+        if (empty($carrito)) {
+            $this->cancelarOrdenPendienteSiCarritoVacio();
+        }
+
         return view('carrito.index', compact('carrito', 'total'));
     }
 
-    // Agregar producto
-    public function agregar(Request $request, $id)
+    /** Agregar producto al carrito */
+    public function agregar(Request $request, int $id)
     {
         $producto = Producto::with('imagenes')->findOrFail($id);
 
-        $cantidadAAgregar = (int) $request->input('cantidad', 1);
+        $cantidadSolicitada = max(1, (int) $request->input('cantidad', 1));
         $carrito = session()->get('carrito', []);
-        $cantidadEnCarrito = isset($carrito[$id]) ? (int)$carrito[$id]['cantidad'] : 0;
-        $cantidadTotal = $cantidadEnCarrito + max(1, $cantidadAAgregar);
+        $enCarrito = isset($carrito[$id]) ? (int) $carrito[$id]['cantidad'] : 0;
+        $cantidadTotal = $enCarrito + $cantidadSolicitada;
 
-        if ($cantidadTotal > (int)$producto->stock) {
+        // Stock
+        if ($cantidadTotal > (int) $producto->stock) {
             return response()->json([
                 'success' => false,
-                'message' => 'No puedes agregar más de las unidades disponibles (' . $producto->stock . ').'
-            ]);
+                'message' => 'No puedes agregar más de las unidades disponibles (' . $producto->stock . ').',
+            ], 422);
         }
 
-        // Todas las imágenes para el carrusel del carrito
+        // Imágenes del carrusel
         $imagenes = $producto->imagenes->map(
             fn($img) => 'data:image/jpeg;base64,' . $img->contenido
         )->values()->all();
 
         $carrito[$id] = [
             'nombre'    => $producto->nombre,
-            'precio'    => (float)$producto->precio,
+            'precio'    => (float) $producto->precio,
             'cantidad'  => $cantidadTotal,
             'imagen'    => $imagenes[0] ?? asset('storage/placeholder.png'), // compat
             'imagenes'  => $imagenes ?: [asset('storage/placeholder.png')],
@@ -98,17 +150,19 @@ class CarritoController extends Controller
 
         session()->put('carrito', $carrito);
 
-        $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
-        session()->put('cart_count', $totalUnidades);
+        $cartCount = $this->syncCartCount($carrito);
+        $totalRaw  = $this->calcTotal($carrito);
 
         return response()->json([
-            'success'       => true,
-            'cart_count'    => $totalUnidades,
+            'success'          => true,
+            'cart_count'       => $cartCount,
+            'total_raw'        => $totalRaw,
+            'total_formateado' => '$' . number_format($totalRaw, 2, ',', '.'),
         ]);
     }
 
-    // Eliminar producto completo
-    public function eliminar(Request $request, $id)
+    /** Eliminar un producto del carrito por completo */
+    public function eliminar(Request $request, int $id)
     {
         $carrito = session()->get('carrito', []);
 
@@ -117,31 +171,27 @@ class CarritoController extends Controller
             session()->put('carrito', $carrito);
         }
 
-        $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
-        if ($totalUnidades == 0) {
-            session()->forget('cart_count');
-        } else {
-            session()->put('cart_count', $totalUnidades);
-        }
+        $cartCount = $this->syncCartCount($carrito);
+        $totalRaw  = $this->calcTotal($carrito);
 
-        $nuevoTotal = 0;
-        foreach ($carrito as $item) {
-            $nuevoTotal += $item['precio'] * $item['cantidad'];
-        }
+        // Si quedó vacío, cancela la orden pendiente (si existe)
+        $this->cancelarOrdenPendienteSiCarritoVacio();
 
         return response()->json([
-            'success'           => true,
-            'cart_count'        => $totalUnidades,
-            'total_formateado'  => '$' . number_format($nuevoTotal, 2, ',', '.'),
-            'message'           => 'Producto eliminado del carrito'
+            'success'          => true,
+            'cart_count'       => $cartCount,
+            'total_raw'        => $totalRaw,
+            'total_formateado' => '$' . number_format($totalRaw, 2, ',', '.'),
+            'message'          => 'Producto eliminado del carrito.',
         ]);
     }
 
-    // Quitar una cantidad específica
-    public function quitar(Request $request, $id)
+    /** Quitar una cantidad específica de un producto */
+    public function quitar(Request $request, int $id)
     {
         $carrito = session()->get('carrito', []);
-        $cantidadARestar = (int) $request->input('cantidad', 1);
+        $cantidadARestar = max(1, (int) $request->input('cantidad', 1));
+
         $removido = false;
         $nuevaCantidad = 0;
         $totalIndividual = 0;
@@ -153,34 +203,31 @@ class CarritoController extends Controller
                 unset($carrito[$id]);
                 $removido = true;
             } else {
-                $nuevaCantidad = $carrito[$id]['cantidad'];
-                $totalIndividual = number_format($carrito[$id]['precio'] * $nuevaCantidad, 2, ',', '.');
+                $nuevaCantidad   = (int) $carrito[$id]['cantidad'];
+                $totalIndividual = number_format(
+                    ((float) $carrito[$id]['precio']) * $nuevaCantidad,
+                    2, ',', '.'
+                );
             }
 
             session()->put('carrito', $carrito);
         }
 
-        $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
-        $total = 0;
-        foreach ($carrito as $item) {
-            $total += $item['precio'] * $item['cantidad'];
-        }
+        $cartCount = $this->syncCartCount($carrito);
+        $totalRaw  = $this->calcTotal($carrito);
 
-        if ($totalUnidades == 0) {
-            session()->forget('cart_count');
-        } else {
-            session()->put('cart_count', $totalUnidades);
-        }
+        // Si quedó vacío, cancela la orden pendiente (si existe)
+        $this->cancelarOrdenPendienteSiCarritoVacio();
 
         return response()->json([
             'success'           => true,
             'removido'          => $removido,
             'nueva_cantidad'    => $nuevaCantidad,
             'total_individual'  => $totalIndividual,
-            'cart_count'        => $totalUnidades,
-            'total_formateado'  => '$' . number_format($total, 2, ',', '.'),
-            'total_raw'         => $total,
-            'message'           => 'Cantidad actualizada'
+            'cart_count'        => $cartCount,
+            'total_raw'         => $totalRaw,
+            'total_formateado'  => '$' . number_format($totalRaw, 2, ',', '.'),
+            'message'           => 'Cantidad actualizada.',
         ]);
     }
 }

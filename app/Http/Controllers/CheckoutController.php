@@ -141,7 +141,26 @@ class CheckoutController extends Controller
             return redirect()->route('checkout')->with('error', 'No hay una orden pendiente.');
         }
 
-        $orden = Orden::with('detalles.producto')->findOrFail($ordenId);
+        // Traemos productos con imágenes (por si hay en BD)
+        $orden = Orden::with(['detalles.producto.imagenes'])->findOrFail($ordenId);
+
+        // 🔹 Adjunta imágenes desde el CARRITO (sesión) como fuente principal
+        $carrito = session('carrito', []);
+        foreach ($orden->detalles as $detalle) {
+            $prodId = $detalle->producto_id;
+            $imgsSesion = [];
+            if (isset($carrito[$prodId])) {
+                $p = $carrito[$prodId];
+                // puede venir 'imagenes' (array) o 'imagen' (string)
+                if (!empty($p['imagenes']) && is_array($p['imagenes'])) {
+                    $imgsSesion = $p['imagenes'];
+                } elseif (!empty($p['imagen'])) {
+                    $imgsSesion = [$p['imagen']];
+                }
+            }
+            // Asignamos un atributo dinámico que la vista usará primero
+            $detalle->setAttribute('imagenes_sesion', $imgsSesion);
+        }
 
         // Datos para la vista (el monto sale SIEMPRE del total de la orden)
         $epayco = [

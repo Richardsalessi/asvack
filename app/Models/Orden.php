@@ -12,7 +12,7 @@ class Orden extends Model
 
     protected $fillable = [
         'user_id',
-        'estado',         // pendiente|pagada|rechazada|fallida
+        'estado',
         'subtotal',
         'envio',
         'total',
@@ -20,13 +20,15 @@ class Orden extends Model
         'trx_id',
         'respuesta',
         'payload',
+        'datos_envio', // ✅ nuevo
     ];
 
     protected $casts = [
-        'payload' => 'array',
-        'subtotal' => 'decimal:2',
-        'envio'    => 'decimal:2',
-        'total'    => 'decimal:2',
+        'payload'     => 'array',
+        'datos_envio' => 'array', // ✅ para leer como array
+        'subtotal'    => 'decimal:2',
+        'envio'       => 'decimal:2',
+        'total'       => 'decimal:2',
     ];
 
     public function user(): BelongsTo

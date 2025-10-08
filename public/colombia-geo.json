@@ -1,0 +1,344 @@
+{
+  "fuente": "Lista base para selects dependientes Departamento → Ciudad (Colombia). Puedes ampliarla cuando quieras.",
+  "departamentos": [
+    {
+      "id": "91",
+      "nombre": "Amazonas",
+      "ciudades": [
+        "Leticia",
+        "Puerto Nariño"
+      ]
+    },
+    {
+      "id": "05",
+      "nombre": "Antioquia",
+      "ciudades": [
+        "Medellín",
+        "Envigado",
+        "Bello",
+        "Itagüí",
+        "Rionegro",
+        "Sabaneta",
+        "La Estrella",
+        "Copacabana",
+        "Girardota",
+        "Caldas",
+        "Apartadó",
+        "Turbo",
+        "Carepa",
+        "Santa Fe de Antioquia",
+        "Caucasia"
+      ]
+    },
+    {
+      "id": "81",
+      "nombre": "Arauca",
+      "ciudades": [
+        "Arauca",
+        "Saravena",
+        "Tame",
+        "Arauquita"
+      ]
+    },
+    {
+      "id": "08",
+      "nombre": "Atlántico",
+      "ciudades": [
+        "Barranquilla",
+        "Soledad",
+        "Malambo",
+        "Galapa",
+        "Puerto Colombia",
+        "Sabanalarga"
+      ]
+    },
+    {
+      "id": "11",
+      "nombre": "Bogotá, D.C.",
+      "ciudades": [
+        "Bogotá"
+      ]
+    },
+    {
+      "id": "13",
+      "nombre": "Bolívar",
+      "ciudades": [
+        "Cartagena",
+        "Magangué",
+        "Turbaco",
+        "Arjona"
+      ]
+    },
+    {
+      "id": "15",
+      "nombre": "Boyacá",
+      "ciudades": [
+        "Tunja",
+        "Duitama",
+        "Sogamoso",
+        "Chiquinquirá",
+        "Paipa"
+      ]
+    },
+    {
+      "id": "17",
+      "nombre": "Caldas",
+      "ciudades": [
+        "Manizales",
+        "Villamaría",
+        "Chinchiná",
+        "La Dorada"
+      ]
+    },
+    {
+      "id": "18",
+      "nombre": "Caquetá",
+      "ciudades": [
+        "Florencia",
+        "San Vicente del Caguán",
+        "Belén de los Andaquíes"
+      ]
+    },
+    {
+      "id": "85",
+      "nombre": "Casanare",
+      "ciudades": [
+        "Yopal",
+        "Aguazul",
+        "Villanueva",
+        "Tauramena"
+      ]
+    },
+    {
+      "id": "19",
+      "nombre": "Cauca",
+      "ciudades": [
+        "Popayán",
+        "Santander de Quilichao",
+        "Puerto Tejada",
+        "Patía"
+      ]
+    },
+    {
+      "id": "20",
+      "nombre": "Cesar",
+      "ciudades": [
+        "Valledupar",
+        "Aguachica",
+        "Curumaní"
+      ]
+    },
+    {
+      "id": "27",
+      "nombre": "Chocó",
+      "ciudades": [
+        "Quibdó",
+        "Istmina",
+        "Condoto"
+      ]
+    },
+    {
+      "id": "23",
+      "nombre": "Córdoba",
+      "ciudades": [
+        "Montería",
+        "Lorica",
+        "Sahagún",
+        "Cereté"
+      ]
+    },
+    {
+      "id": "25",
+      "nombre": "Cundinamarca",
+      "ciudades": [
+        "Soacha",
+        "Chía",
+        "Zipaquirá",
+        "Facatativá",
+        "Fusagasugá",
+        "Mosquera",
+        "Funza",
+        "Madrid",
+        "Girardot",
+        "Cajicá",
+        "La Calera",
+        "Tocancipá",
+        "Tenjo"
+      ]
+    },
+    {
+      "id": "94",
+      "nombre": "Guainía",
+      "ciudades": [
+        "Inírida"
+      ]
+    },
+    {
+      "id": "95",
+      "nombre": "Guaviare",
+      "ciudades": [
+        "San José del Guaviare",
+        "Calamar"
+      ]
+    },
+    {
+      "id": "41",
+      "nombre": "Huila",
+      "ciudades": [
+        "Neiva",
+        "Pitalito",
+        "Garzón"
+      ]
+    },
+    {
+      "id": "44",
+      "nombre": "La Guajira",
+      "ciudades": [
+        "Riohacha",
+        "Maicao",
+        "Uribia"
+      ]
+    },
+    {
+      "id": "47",
+      "nombre": "Magdalena",
+      "ciudades": [
+        "Santa Marta",
+        "Ciénaga",
+        "Fundación"
+      ]
+    },
+    {
+      "id": "50",
+      "nombre": "Meta",
+      "ciudades": [
+        "Villavicencio",
+        "Acacías",
+        "Granada"
+      ]
+    },
+    {
+      "id": "52",
+      "nombre": "Nariño",
+      "ciudades": [
+        "Pasto",
+        "Ipiales",
+        "Tumaco",
+        "Túquerres"
+      ]
+    },
+    {
+      "id": "54",
+      "nombre": "Norte de Santander",
+      "ciudades": [
+        "Cúcuta",
+        "Ocaña",
+        "Pamplona",
+        "Los Patios",
+        "Villa del Rosario"
+      ]
+    },
+    {
+      "id": "86",
+      "nombre": "Putumayo",
+      "ciudades": [
+        "Mocoa",
+        "Puerto Asís",
+        "Orito"
+      ]
+    },
+    {
+      "id": "63",
+      "nombre": "Quindío",
+      "ciudades": [
+        "Armenia",
+        "Calarcá",
+        "Quimbaya",
+        "La Tebaida",
+        "Montenegro"
+      ]
+    },
+    {
+      "id": "66",
+      "nombre": "Risaralda",
+      "ciudades": [
+        "Pereira",
+        "Dosquebradas",
+        "La Virginia",
+        "Santa Rosa de Cabal"
+      ]
+    },
+    {
+      "id": "88",
+      "nombre": "San Andrés y Providencia",
+      "ciudades": [
+        "San Andrés",
+        "Providencia"
+      ]
+    },
+    {
+      "id": "68",
+      "nombre": "Santander",
+      "ciudades": [
+        "Bucaramanga",
+        "Floridablanca",
+        "Girón",
+        "Piedecuesta",
+        "Barrancabermeja",
+        "San Gil",
+        "Socorro"
+      ]
+    },
+    {
+      "id": "70",
+      "nombre": "Sucre",
+      "ciudades": [
+        "Sincelejo",
+        "Corozal",
+        "Sampués"
+      ]
+    },
+    {
+      "id": "73",
+      "nombre": "Tolima",
+      "ciudades": [
+        "Ibagué",
+        "Espinal",
+        "Melgar",
+        "Honda"
+      ]
+    },
+    {
+      "id": "76",
+      "nombre": "Valle del Cauca",
+      "ciudades": [
+        "Cali",
+        "Palmira",
+        "Yumbo",
+        "Tuluá",
+        "Buga",
+        "Cartago",
+        "Jamundí",
+        "Buenaventura",
+        "Candelaria",
+        "Zarzal",
+        "Roldanillo"
+      ]
+    },
+    {
+      "id": "97",
+      "nombre": "Vaupés",
+      "ciudades": [
+        "Mitú"
+      ]
+    },
+    {
+      "id": "99",
+      "nombre": "Vichada",
+      "ciudades": [
+        "Puerto Carreño",
+        "La Primavera"
+      ]
+    }
+  ]
+}

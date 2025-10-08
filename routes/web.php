@@ -97,6 +97,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout'); // <-- nombre viejo
     Route::post('/checkout/create', [CheckoutController::class, 'create'])->name('checkout.create');
     Route::get('/checkout/pay', [CheckoutController::class, 'pay'])->name('checkout.pay');
+    Route::post('/checkout/pay/save', [CheckoutController::class, 'saveShipping'])->name('checkout.pay.save');
+
 
 
     // 2) Historial del cliente

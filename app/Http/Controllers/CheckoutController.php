@@ -24,7 +24,8 @@ class CheckoutController extends Controller
         foreach ($carrito as $item) {
             $subtotal += ((float) $item['precio']) * ((int) $item['cantidad']);
         }
-        $envio = 0;
+        // En la revisión aún no sabemos dirección, pero la regla es global:
+        $envio = $this->shippingCost($subtotal);
         $total = $subtotal + $envio;
 
         return view('checkout.show', compact('carrito', 'subtotal', 'envio', 'total'));
@@ -53,7 +54,9 @@ class CheckoutController extends Controller
             $cantidad = (int) $item['cantidad'];
             $subtotal += $precio * $cantidad;
         }
-        $envio = 0;
+
+        // Regla de envío
+        $envio = $this->shippingCost($subtotal);
         $total = $subtotal + $envio;
 
         // Idempotencia: si hay una orden pendiente en sesión, la actualizamos.
@@ -99,11 +102,12 @@ class CheckoutController extends Controller
 
             // No había orden pendiente válida: crear una nueva
             $nueva = Orden::create([
-                'user_id'  => auth()->id(),
-                'estado'   => 'pendiente',
-                'subtotal' => $subtotal,
-                'envio'    => $envio,
-                'total'    => $total,
+                'user_id'     => auth()->id(),
+                'estado'      => 'pendiente',
+                'subtotal'    => $subtotal,
+                'envio'       => $envio,
+                'total'       => $total,
+                'datos_envio' => null, // se llenará en /checkout/pay
             ]);
 
             foreach ($carrito as $prodId => $item) {
@@ -133,6 +137,7 @@ class CheckoutController extends Controller
 
     /**
      * 3) Pantalla de pago: muestra la orden y configura el widget de ePayco
+     *    (aquí también mostramos el formulario de dirección y validaciones)
      */
     public function pay(Request $request)
     {
@@ -144,21 +149,19 @@ class CheckoutController extends Controller
         // Traemos productos con imágenes (por si hay en BD)
         $orden = Orden::with(['detalles.producto.imagenes'])->findOrFail($ordenId);
 
-        // 🔹 Adjunta imágenes desde el CARRITO (sesión) como fuente principal
+        // Adjunta imágenes desde el CARRITO (sesión) como fuente principal
         $carrito = session('carrito', []);
         foreach ($orden->detalles as $detalle) {
             $prodId = $detalle->producto_id;
             $imgsSesion = [];
             if (isset($carrito[$prodId])) {
                 $p = $carrito[$prodId];
-                // puede venir 'imagenes' (array) o 'imagen' (string)
                 if (!empty($p['imagenes']) && is_array($p['imagenes'])) {
                     $imgsSesion = $p['imagenes'];
                 } elseif (!empty($p['imagen'])) {
                     $imgsSesion = [$p['imagen']];
                 }
             }
-            // Asignamos un atributo dinámico que la vista usará primero
             $detalle->setAttribute('imagenes_sesion', $imgsSesion);
         }
 
@@ -177,7 +180,97 @@ class CheckoutController extends Controller
             'extra1'       => (string) $orden->id, // para que el webhook identifique la orden
         ];
 
-        return view('checkout.pay', compact('orden', 'epayco'));
+        // ===== Prefill con dirección predeterminada del usuario =====
+        $datosEnvio = (array) ($orden->datos_envio ?? []);
+        $pref = optional(auth()->user())->direccion_predeterminada; // encrypted:array en el modelo User
+
+        if (is_array($pref)) {
+            // Completa ENVÍO si faltan ciudad/departamento/dirección
+            $envioActual = (array) data_get($datosEnvio, 'envio', []);
+            $datosEnvio['envio'] = array_merge($pref, $envioActual);
+
+            // Opcional: también completar FACTURACIÓN si no viene algo
+            $factActual = (array) data_get($datosEnvio, 'facturacion', []);
+            // Solo mezclamos ciudad/departamento si faltan
+            if (empty($factActual['ciudad']) || empty($factActual['departamento'])) {
+                $factPref = array_intersect_key($pref, array_flip(['ciudad', 'departamento', 'direccion']));
+                $datosEnvio['facturacion'] = array_merge($factPref, $factActual);
+            }
+        }
+
+        // Flag: ¿ya está validada la dirección?
+        $shippingOK = (bool) data_get($orden->datos_envio ?? [], 'validated', false);
+
+        return view('checkout.pay', compact('orden', 'epayco', 'datosEnvio', 'shippingOK'));
+    }
+
+    /**
+     * 3.1) Guarda datos de facturación/envío, valida y recalcula totales.
+     */
+    public function saveShipping(Request $request)
+    {
+        $ordenId = session('orden_pendiente_id');
+        if (!$ordenId) {
+            return redirect()->route('checkout')->with('error', 'No hay una orden pendiente.');
+        }
+
+        // Validación de campos esenciales
+        $data = $request->validate([
+            // Facturación
+            'facturacion.nombre'       => 'required|string|max:120',
+            'facturacion.apellidos'    => 'required|string|max:120',
+            'facturacion.cedula'       => 'required|string|max:40',
+            'facturacion.telefono'     => 'required|string|max:40',
+            'facturacion.email'        => 'nullable|email|max:160',
+            'facturacion.direccion'    => 'required|string|max:255',
+            'facturacion.ciudad'       => 'required|string|max:120',
+            'facturacion.departamento' => 'required|string|max:120',
+
+            // Envío
+            'envio.nombre'             => 'required|string|max:120',
+            'envio.apellidos'          => 'required|string|max:120',
+            'envio.direccion'          => 'required|string|max:255',
+            'envio.ciudad'             => 'required|string|max:120',
+            'envio.departamento'       => 'required|string|max:120',
+            'envio.notas'              => 'nullable|string|max:500',
+
+            // Términos
+            'acepta_terminos'          => 'accepted',
+        ], [
+            'acepta_terminos.accepted' => 'Debes aceptar los términos y condiciones para continuar.',
+        ]);
+
+        $orden = Orden::with('detalles')->where('id', $ordenId)
+            ->where('user_id', auth()->id())
+            ->where('estado', 'pendiente')
+            ->firstOrFail();
+
+        // Recalcular subtotal por seguridad
+        $subtotal = 0;
+        foreach ($orden->detalles as $det) {
+            $subtotal += (float) $det->precio_unitario * (int) $det->cantidad;
+        }
+
+        $envio = $this->shippingCost($subtotal);
+        $total = $subtotal + $envio;
+
+        // Guardar JSON de datos de envío/billing
+        $guardar = [
+            'facturacion'     => $data['facturacion'],
+            'envio'           => $data['envio'],
+            'acepta_terminos' => true,
+            'validated'       => true,
+            'guardado_en'     => now()->toDateTimeString(),
+        ];
+
+        $orden->update([
+            'subtotal'    => $subtotal,
+            'envio'       => $envio,
+            'total'       => $total,
+            'datos_envio' => $guardar,
+        ]);
+
+        return redirect()->route('checkout.pay')->with('success', 'Datos de envío guardados. ¡Ya puedes pagar!');
     }
 
     /**
@@ -205,6 +298,16 @@ class CheckoutController extends Controller
 
         // (No cambiamos estados aquí)
         return view('checkout.response', compact('data', 'orden'));
+    }
+
+    /**
+     * Helper: costo de envío (gratis >= 50.000, si no $10.000).
+     */
+    private function shippingCost(float $subtotal): float
+    {
+        $umbral = 50000;   // puedes pasarlo a env() si quieres
+        $flat   = 10000.0; // costo fijo si no llega al umbral
+        return $subtotal >= $umbral ? 0.0 : $flat;
     }
 
     /**

@@ -3,75 +3,166 @@
 namespace App\Http\Controllers;
 
 use App\Models\Producto;
+use App\Models\Orden;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
 
 class CarritoController extends Controller
 {
-    // Ver el carrito
+    // ============================
+    // Helpers de imágenes
+    // ============================
+
+    /** Devuelve todas las imágenes (base64) para el carrusel del carrito */
+    private function getImagenesBase64(int $id): array
+    {
+        $producto = Producto::with('imagenes')->find($id);
+        if (!$producto) {
+            return [asset('storage/placeholder.png')];
+        }
+
+        $arr = $producto->imagenes
+            ? $producto->imagenes->map(fn($img) => 'data:image/jpeg;base64,' . $img->contenido)->values()->all()
+            : [];
+
+        return count($arr) ? $arr : [asset('storage/placeholder.png')];
+    }
+
+    /** Compat: imagen “principal” (no usada en el carrusel, pero útil en otras vistas) */
+    private function getImagenBase64(int $id): string
+    {
+        $producto = Producto::find($id);
+        $imagen = $producto?->imagenes()->first();
+        return $imagen && $imagen->contenido
+            ? 'data:image/png;base64,' . $imagen->contenido
+            : asset('storage/placeholder.png');
+    }
+
+    // ============================
+    // Helpers de carrito/orden
+    // ============================
+
+    /** Recalcula total de unidades en el carrito y actualiza badge de sesión */
+    private function syncCartCount(array $carrito): int
+    {
+        $totalUnidades = array_sum(array_map(fn($it) => (int) $it['cantidad'], $carrito));
+        if ($totalUnidades <= 0) {
+            session()->forget('cart_count');
+        } else {
+            session()->put('cart_count', $totalUnidades);
+        }
+        return $totalUnidades;
+    }
+
+    /** Recalcula el total en dinero del carrito */
+    private function calcTotal(array $carrito): float
+    {
+        $total = 0.0;
+        foreach ($carrito as $item) {
+            $total += ((float) $item['precio']) * ((int) $item['cantidad']);
+        }
+        return $total;
+    }
+
+    /** Si el carrito quedó vacío, cancela la orden pendiente y limpia la sesión */
+    private function cancelarOrdenPendienteSiCarritoVacio(): void
+    {
+        $carrito = session('carrito', []);
+        if (!empty($carrito)) {
+            return; // aún hay items
+        }
+
+        $ordenId = session('orden_pendiente_id');
+        if (!$ordenId) {
+            return;
+        }
+
+        $orden = Orden::find($ordenId);
+        if ($orden && $orden->estado === 'pendiente') {
+            $orden->estado = 'cancelada';
+            $orden->save();
+        }
+
+        // Limpia el puntero para que no se re-use
+        session()->forget('orden_pendiente_id');
+    }
+
+    // ============================
+    // Vistas / Acciones públicas
+    // ============================
+
+    /** Página del carrito */
     public function index()
     {
         $carrito = session()->get('carrito', []);
 
+        // Aseguramos estructura y totales por item
         foreach ($carrito as $id => &$producto) {
-            $producto['imagen'] = $this->getImagenBase64($id);
-            $producto['total'] = $producto['precio'] * $producto['cantidad'];
+            if (!isset($producto['imagenes']) || !is_array($producto['imagenes']) || empty($producto['imagenes'])) {
+                $producto['imagenes'] = $this->getImagenesBase64((int) $id);
+            }
+            if (!isset($producto['imagen'])) {
+                $producto['imagen'] = $producto['imagenes'][0] ?? asset('storage/placeholder.png');
+            }
+            $producto['total'] = ((float) $producto['precio']) * ((int) $producto['cantidad']);
         }
+        unset($producto);
 
         $total = array_sum(array_column($carrito, 'total'));
+
+        // Por si el usuario llega aquí después de vaciar (refresco / otra pestaña)
+        if (empty($carrito)) {
+            $this->cancelarOrdenPendienteSiCarritoVacio();
+        }
 
         return view('carrito.index', compact('carrito', 'total'));
     }
 
-    // Obtener imagen en base64
-    private function getImagenBase64($id)
+    /** Agregar producto al carrito */
+    public function agregar(Request $request, int $id)
     {
-        $producto = Producto::find($id);
-        $imagen = $producto->imagenes()->first();
-        if ($imagen && $imagen->contenido) {
-            return 'data:image/png;base64,' . $imagen->contenido;
-        }
-        return asset('storage/placeholder.png');
-    }
+        $producto = Producto::with('imagenes')->findOrFail($id);
 
-    // Agregar un producto al carrito
-    public function agregar(Request $request, $id)
-    {
-        $producto = Producto::findOrFail($id);
-        $imagen = $this->getImagenBase64($id);
-        $cantidadAAgregar = (int) $request->input('cantidad', 1);
-
+        $cantidadSolicitada = max(1, (int) $request->input('cantidad', 1));
         $carrito = session()->get('carrito', []);
-        $cantidadEnCarrito = isset($carrito[$id]) ? $carrito[$id]['cantidad'] : 0;
-        $cantidadTotal = $cantidadEnCarrito + $cantidadAAgregar;
+        $enCarrito = isset($carrito[$id]) ? (int) $carrito[$id]['cantidad'] : 0;
+        $cantidadTotal = $enCarrito + $cantidadSolicitada;
 
-        if ($cantidadTotal > $producto->stock) {
+        // Stock
+        if ($cantidadTotal > (int) $producto->stock) {
             return response()->json([
                 'success' => false,
-                'message' => 'No puedes agregar más de las unidades disponibles (' . $producto->stock . ').'
-            ]);
+                'message' => 'No puedes agregar más de las unidades disponibles (' . $producto->stock . ').',
+            ], 422);
         }
 
+        // Imágenes del carrusel
+        $imagenes = $producto->imagenes->map(
+            fn($img) => 'data:image/jpeg;base64,' . $img->contenido
+        )->values()->all();
+
         $carrito[$id] = [
-            'nombre' => $producto->nombre,
-            'precio' => $producto->precio,
-            'imagen' => $imagen,
-            'cantidad' => $cantidadTotal,
+            'nombre'    => $producto->nombre,
+            'precio'    => (float) $producto->precio,
+            'cantidad'  => $cantidadTotal,
+            'imagen'    => $imagenes[0] ?? asset('storage/placeholder.png'), // compat
+            'imagenes'  => $imagenes ?: [asset('storage/placeholder.png')],
         ];
 
         session()->put('carrito', $carrito);
 
-        $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
-        session()->put('cart_count', $totalUnidades);
+        $cartCount = $this->syncCartCount($carrito);
+        $totalRaw  = $this->calcTotal($carrito);
 
         return response()->json([
-            'success' => true,
-            'cart_count' => $totalUnidades
+            'success'          => true,
+            'cart_count'       => $cartCount,
+            'total_raw'        => $totalRaw,
+            'total_formateado' => '$' . number_format($totalRaw, 2, ',', '.'),
         ]);
     }
 
-    // Eliminar un producto del carrito
-    public function eliminar(Request $request, $id)
+    /** Eliminar un producto del carrito por completo */
+    public function eliminar(Request $request, int $id)
     {
         $carrito = session()->get('carrito', []);
 
@@ -80,72 +171,63 @@ class CarritoController extends Controller
             session()->put('carrito', $carrito);
         }
 
-        $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
-        if ($totalUnidades == 0) {
-            session()->forget('cart_count');
-        } else {
-            session()->put('cart_count', $totalUnidades);
-        }
+        $cartCount = $this->syncCartCount($carrito);
+        $totalRaw  = $this->calcTotal($carrito);
 
-        // Calcular nuevo total
-        $nuevoTotal = 0;
-        foreach ($carrito as $item) {
-            $nuevoTotal += $item['precio'] * $item['cantidad'];
-        }
+        // Si quedó vacío, cancela la orden pendiente (si existe)
+        $this->cancelarOrdenPendienteSiCarritoVacio();
 
         return response()->json([
-            'success' => true,
-            'cart_count' => $totalUnidades,
-            'total_formateado' => '$' . number_format($nuevoTotal, 2, ',', '.'),
-            'message' => 'Producto eliminado del carrito'
+            'success'          => true,
+            'cart_count'       => $cartCount,
+            'total_raw'        => $totalRaw,
+            'total_formateado' => '$' . number_format($totalRaw, 2, ',', '.'),
+            'message'          => 'Producto eliminado del carrito.',
         ]);
     }
 
-        // Quitar una cantidad específica
-        public function quitar(Request $request, $id)
-{
-    $carrito = session()->get('carrito', []);
-    $cantidadARestar = (int) $request->input('cantidad', 1);
-    $removido = false;
-    $nuevaCantidad = 0;
-    $totalIndividual = 0;
+    /** Quitar una cantidad específica de un producto */
+    public function quitar(Request $request, int $id)
+    {
+        $carrito = session()->get('carrito', []);
+        $cantidadARestar = max(1, (int) $request->input('cantidad', 1));
 
-    if (isset($carrito[$id])) {
-        $carrito[$id]['cantidad'] -= $cantidadARestar;
+        $removido = false;
+        $nuevaCantidad = 0;
+        $totalIndividual = 0;
 
-        if ($carrito[$id]['cantidad'] <= 0) {
-            unset($carrito[$id]);
-            $removido = true;
-        } else {
-            $nuevaCantidad = $carrito[$id]['cantidad'];
-            $totalIndividual = number_format($carrito[$id]['precio'] * $nuevaCantidad, 2, ',', '.');
+        if (isset($carrito[$id])) {
+            $carrito[$id]['cantidad'] -= $cantidadARestar;
+
+            if ($carrito[$id]['cantidad'] <= 0) {
+                unset($carrito[$id]);
+                $removido = true;
+            } else {
+                $nuevaCantidad   = (int) $carrito[$id]['cantidad'];
+                $totalIndividual = number_format(
+                    ((float) $carrito[$id]['precio']) * $nuevaCantidad,
+                    2, ',', '.'
+                );
+            }
+
+            session()->put('carrito', $carrito);
         }
 
-        session()->put('carrito', $carrito);
+        $cartCount = $this->syncCartCount($carrito);
+        $totalRaw  = $this->calcTotal($carrito);
+
+        // Si quedó vacío, cancela la orden pendiente (si existe)
+        $this->cancelarOrdenPendienteSiCarritoVacio();
+
+        return response()->json([
+            'success'           => true,
+            'removido'          => $removido,
+            'nueva_cantidad'    => $nuevaCantidad,
+            'total_individual'  => $totalIndividual,
+            'cart_count'        => $cartCount,
+            'total_raw'         => $totalRaw,
+            'total_formateado'  => '$' . number_format($totalRaw, 2, ',', '.'),
+            'message'           => 'Cantidad actualizada.',
+        ]);
     }
-
-    $totalUnidades = array_sum(array_column($carrito, 'cantidad'));
-    $total = 0;
-    foreach ($carrito as $item) {
-        $total += $item['precio'] * $item['cantidad'];
-    }
-
-    if ($totalUnidades == 0) {
-        session()->forget('cart_count');
-    } else {
-        session()->put('cart_count', $totalUnidades);
-    }
-
-    return response()->json([
-        'success' => true,
-        'removido' => $removido,
-        'nueva_cantidad' => $nuevaCantidad,
-        'total_individual' => $totalIndividual,
-        'cart_count' => $totalUnidades,
-        'total_formateado' => '$' . number_format($total, 2, ',', '.'),
-        'total_raw' => $total,
-        'message' => 'Cantidad actualizada'
-    ]);
-}
-
 }

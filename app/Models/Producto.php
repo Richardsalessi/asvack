@@ -32,4 +32,10 @@ class Producto extends Model
     {
         return $this->belongsTo(User::class, 'user_id'); // Restaurado
     }
+
+    public function ordenDetalles()
+    {
+        return $this->hasMany(\App\Models\OrdenDetalle::class);
+    }
+
 }

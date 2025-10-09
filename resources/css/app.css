@@ -1,9 +1,13 @@
-@import '@fontsource/figtree';       /* ✅ fuente local (rápida) */
+/* Importaciones SIEMPRE primero */
+@import '@fontsource/figtree';   /* fuente */
+@import 'cart.css';              /* tu CSS personalizado */
+
+/* Tailwind */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import 'cart.css';                  /* ✅ personalizado al final */
 
+/* Tus estilos personalizados */
 .producto-info {
     width: 100%;
     margin-top: 1rem;

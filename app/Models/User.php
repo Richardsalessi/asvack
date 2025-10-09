@@ -12,20 +12,17 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasRoles;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
+     * Campos que se pueden asignar masivamente
      */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'direccion_predeterminada', // ✅ nuevo campo
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
+     * Campos ocultos al serializar
      */
     protected $hidden = [
         'password',
@@ -33,15 +30,24 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Casts (tipos de conversión automática)
      */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+
+            // ✅ Guarda y lee la dirección cifrada como array
+            'direccion_predeterminada' => 'encrypted:array',
         ];
+    }
+
+    /**
+     * Relación: un usuario puede tener muchas órdenes
+     */
+    public function ordenes()
+    {
+        return $this->hasMany(\App\Models\Orden::class);
     }
 }

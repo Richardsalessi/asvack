@@ -4,112 +4,122 @@
 <div class="container mx-auto p-4 max-w-3xl h-screen bg-white dark:bg-gray-800 shadow rounded-lg overflow-y-auto">
     <h1 class="text-3xl font-semibold text-gray-800 dark:text-white mb-4">Editar Producto</h1>
 
-    <form action="{{ route('admin.productos.update', $producto->id) }}" method="POST" enctype="multipart/form-data">
+    <form id="formProducto" action="{{ route('admin.productos.update', $producto->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
         @csrf
         @method('PUT')
 
-        <div class="mb-4">
+        {{-- contenedor para inputs hidden de imágenes a eliminar (permite remover la card del DOM) --}}
+        <div id="inputs-eliminar" class="hidden"></div>
+
+        {{-- Nombre --}}
+        <div>
             <label for="nombre" class="block text-gray-700 dark:text-gray-200 mb-1">Nombre del Producto:</label>
-            <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $producto->nombre) }}" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
-            @error('nombre')
-                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
-            @enderror
+            <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $producto->nombre) }}"
+                class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+            @error('nombre') <div class="text-red-600 text-sm mt-1">{{ $message }}</div> @enderror
         </div>
 
-        <div class="mb-4">
+        {{-- Descripción --}}
+        <div>
             <label for="descripcion" class="block text-gray-700 dark:text-gray-200 mb-1">Descripción:</label>
-            <textarea name="descripcion" id="descripcion" rows="3" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none" required>{{ old('descripcion', $producto->descripcion) }}</textarea>
-            @error('descripcion')
-                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
-            @enderror
+            <textarea name="descripcion" id="descripcion" rows="3"
+                class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none" required>{{ old('descripcion', $producto->descripcion) }}</textarea>
+            @error('descripcion') <div class="text-red-600 text-sm mt-1">{{ $message }}</div> @enderror
         </div>
 
-        <div class="mb-4">
-            <label for="precio" class="block text-gray-700 dark:text-gray-200 mb-1">Precio:</label>
-            <input type="text" name="precio" id="precio" value="{{ old('precio', number_format($producto->precio, 0, ',', '.')) }}" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required autocomplete="off">
-            @error('precio')
-                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
-            @enderror
+        {{-- Precio (formateado en UI, limpio al enviar) --}}
+        <div>
+            <label for="precio_visible" class="block text-gray-700 dark:text-gray-200 mb-1">Precio:</label>
+            <input type="text" id="precio_visible"
+                   value="{{ old('precio', number_format($producto->precio, 0, ',', '.')) }}"
+                   class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                   required autocomplete="off" inputmode="numeric" placeholder="3.250.000">
+            <input type="hidden" name="precio" id="precio" value="{{ old('precio', $producto->precio) }}">
+            @error('precio') <div class="text-red-600 text-sm mt-1">{{ $message }}</div> @enderror
         </div>
 
-        <div class="mb-4">
+        {{-- Categoría --}}
+        <div>
             <label for="categoria_id" class="block text-gray-700 dark:text-gray-200 mb-1">Categoría:</label>
-            <select name="categoria_id" id="categoria_id" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+            <select name="categoria_id" id="categoria_id"
+                class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
                 @foreach($categorias as $categoria)
-                    <option value="{{ $categoria->id }}" {{ old('categoria_id', $producto->categoria_id) == $categoria->id ? 'selected' : '' }}>{{ $categoria->nombre }}</option>
+                    <option value="{{ $categoria->id }}"
+                        {{ old('categoria_id', $producto->categoria_id) == $categoria->id ? 'selected' : '' }}>
+                        {{ $categoria->nombre }}
+                    </option>
                 @endforeach
             </select>
-            @error('categoria_id')
-                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
-            @enderror
+            @error('categoria_id') <div class="text-red-600 text-sm mt-1">{{ $message }}</div> @enderror
         </div>
 
-        <!-- Campo de Stock -->
-        <div class="mb-4">
+        {{-- Stock --}}
+        <div>
             <label for="stock" class="block text-gray-700 dark:text-gray-200 mb-1">Stock:</label>
-            <input type="number" name="stock" id="stock" value="{{ old('stock', $producto->stock) }}" 
-                class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+            <input type="number" name="stock" id="stock" value="{{ old('stock', $producto->stock) }}"
+                class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 required min="0" oninput="this.value = Math.max(this.value, 0)">
-            @error('stock')
-                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
-            @enderror
+            @error('stock') <div class="text-red-600 text-sm mt-1">{{ $message }}</div> @enderror
         </div>
 
-        <!-- Campo de Contacto de WhatsApp -->
-        <div class="mb-4">
-            <label for="contacto_whatsapp" class="block text-gray-700 dark:text-gray-200 mb-1">Contacto de WhatsApp:</label>
-            <div class="flex">
-                <span class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-l-lg text-gray-700 dark:text-gray-200 border border-r-0 border-gray-300 dark:border-gray-600">+57</span>
-                <input type="text" name="contacto_whatsapp" id="contacto_whatsapp" value="{{ old('contacto_whatsapp', str_replace('+57', '', $producto->contacto_whatsapp)) }}" class="w-full p-2 border rounded-r-lg focus:ring focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
-            </div>
-            @error('contacto_whatsapp')
-                <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
-            @enderror
-        </div>
+        {{-- Imágenes existentes + nuevas --}}
+        <div>
+            <label class="block text-gray-700 dark:text-gray-200 mb-2">Imágenes:</label>
 
-        <!-- Sección para imágenes ya subidas y nuevas imágenes -->
-        <div class="mb-4">
-            <label class="block text-gray-700 dark:text-gray-200 mb-1">Imágenes:</label>
-            <div class="flex flex-wrap gap-4 items-center" id="imagenes-container">
+            {{-- Carrusel horizontal para no llenar la pantalla --}}
+            <div class="flex gap-4 items-start mb-4 overflow-x-auto no-select snap-x snap-mandatory pb-2" id="imagenes-actuales">
                 @foreach($producto->imagenes as $imagen)
-                    <div class="relative w-32 h-40 border rounded-lg dark:bg-gray-700 dark:border-gray-600 overflow-hidden flex flex-col justify-between items-center p-1" data-imagen-id="{{ $imagen->id }}">
+                    <div class="relative w-32 h-40 border rounded-lg dark:bg-gray-700 dark:border-gray-600 overflow-hidden flex flex-col justify-between items-center p-1 shrink-0 snap-start"
+                         data-imagen-id="{{ $imagen->id }}">
                         <a href="#" class="open-modal cursor-pointer" data-image-url="data:image/jpeg;base64,{{ $imagen->contenido }}">
-                            <img src="data:image/jpeg;base64,{{ $imagen->contenido }}" alt="Imagen del producto" class="object-contain w-full h-24 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+                            <img src="data:image/jpeg;base64,{{ $imagen->contenido }}" alt="Imagen del producto"
+                                 class="object-contain w-full h-24 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
                         </a>
-                        <span class="text-xs text-center text-gray-600 dark:text-gray-300 mt-0">{{ basename($imagen->ruta) }}</span>
-                        <button type="button" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center eliminar-imagen hover:bg-red-800 transition-all duration-300 shadow-lg">
+                        <span class="text-[11px] text-center text-gray-600 dark:text-gray-300 mt-0 truncate w-full">{{ basename($imagen->ruta) }}</span>
+
+                        {{-- Marcar para eliminar --}}
+                        <button type="button"
+                                class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center eliminar-imagen hover:bg-red-800 transition-all duration-300 shadow-lg"
+                                title="Eliminar imagen">
                             &times;
                         </button>
                         <input type="hidden" name="eliminar_imagenes[]" value="" disabled>
                     </div>
                 @endforeach
-                <div class="flex gap-4 items-center" id="preview-imagenes"></div>
+
+                {{-- Contenedor de previews nuevas (también horizontal) --}}
+                <div class="flex gap-4 items-start shrink-0" id="preview-imagenes"></div>
             </div>
-        </div>
 
-        <div class="flex gap-4 items-center mb-6">
-            <label for="imagenes" class="block cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 text-center w-auto">
-                <input type="file" name="imagenes[]" id="imagenes" multiple class="hidden">
-                <span>Elegir archivos</span>
+            {{-- Input archivos --}}
+            <label for="imagenes" class="inline-flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                <input type="file" name="imagenes[]" id="imagenes" multiple class="hidden" accept="image/*">
+                Elegir archivos
             </label>
+            @error('imagenes') <div class="text-red-600 text-sm mt-2">{{ $message }}</div> @enderror
         </div>
 
-        <div class="flex gap-4 justify-end">
-            <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">
-                Actualizar Producto
-            </button>
-            <a href="{{ route('admin.productos.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">
-                Cancelar
-            </a>
+        {{-- Barra de acciones (fija en móviles, normal en desktop) --}}
+        <div class="md:static fixed left-0 right-0 bottom-0 md:bottom-auto z-20 bg-gray-900/80 md:bg-transparent backdrop-blur md:backdrop-blur-0 px-4 py-3 md:p-0">
+            <div class="flex gap-4 justify-end max-w-3xl mx-auto">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">
+                    Actualizar Producto
+                </button>
+                <a href="{{ route('admin.productos.index') }}"
+                   class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">
+                    Cancelar
+                </a>
+            </div>
         </div>
     </form>
 </div>
 
-<a href="#" id="backToTopButton" class="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-800 text-white rounded-full p-3 shadow-lg transition-all duration-300">
+{{-- Back to top --}}
+<a href="#" id="backToTopButton" class="fixed bottom-20 right-4 md:bottom-4 bg-blue-600 hover:bg-blue-800 text-white rounded-full p-3 shadow-lg transition-all duration-300">
     &#8679;
 </a>
 
-<!-- Modal para mostrar la imagen ampliada -->
+{{-- Modal imagen --}}
 <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50 hidden no-select">
     <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden max-w-full max-h-full flex items-center justify-center">
         <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center z-10">&times;</button>
@@ -118,119 +128,113 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const openModalButtons = document.querySelectorAll('.open-modal');
-        const modal = document.getElementById('imageModal');
-        const modalImage = document.getElementById('modalImage');
-        const closeModalButton = document.getElementById('closeModal');
+document.addEventListener('DOMContentLoaded', () => {
+    // ===== Modal imagen =====
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const closeModalButton = document.getElementById('closeModal');
 
-        openModalButtons.forEach(button => {
-            button.addEventListener('click', function (e) {
-                e.preventDefault();
-                const imageUrl = button.getAttribute('data-image-url');
-                modalImage.src = imageUrl;
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            });
-        });
-
-        closeModalButton.addEventListener('click', function () {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        });
-
-        modal.addEventListener('click', function (e) {
-            if (e.target === modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        });
-
-        document.querySelectorAll('.eliminar-imagen').forEach(button => {
-            button.addEventListener('click', function () {
-                const imagenDiv = this.closest('div[data-imagen-id]');
-                const eliminarInput = imagenDiv.querySelector('input[name="eliminar_imagenes[]"]');
-                eliminarInput.disabled = false;
-                eliminarInput.value = imagenDiv.getAttribute('data-imagen-id');
-                imagenDiv.classList.add('hidden');
-            });
-        });
-
-        const imagenesInput = document.getElementById('imagenes');
-        const previewContainer = document.getElementById('preview-imagenes');
-        let dataTransfer = new DataTransfer();
-
-        imagenesInput.addEventListener('change', function () {
-            Array.from(this.files).forEach((file) => {
-                dataTransfer.items.add(file);
-                const reader = new FileReader();
-
-                reader.onload = function (e) {
-                    const imagenDiv = document.createElement('div');
-                    imagenDiv.classList.add('relative', 'w-32', 'h-40', 'border', 'rounded-lg', 'dark:bg-gray-700', 'dark:border-gray-600', 'overflow-hidden', 'flex', 'flex-col', 'justify-between', 'items-center', 'p-1');
-
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.classList.add('object-contain', 'w-full', 'h-24', 'rounded-lg', 'shadow-md', 'hover:shadow-lg', 'transition-all', 'duration-300', 'cursor-pointer');
-                    img.addEventListener('click', function () {
-                        modalImage.src = e.target.result;
-                        modal.classList.remove('hidden');
-                        modal.classList.add('flex');
-                    });
-
-                    const fileName = document.createElement('span');
-                    fileName.classList.add('text-xs', 'text-center', 'text-gray-600', 'dark:text-gray-300', 'mt-0');
-                    fileName.innerText = file.name;
-
-                    const deleteButton = document.createElement('button');
-                    deleteButton.type = 'button';
-                    deleteButton.classList.add('absolute', 'top-1', 'right-1', 'bg-red-600', 'text-white', 'rounded-full', 'w-6', 'h-6', 'flex', 'items-center', 'justify-center', 'hover:bg-red-800', 'transition-all', 'duration-300', 'shadow-lg');
-                    deleteButton.innerHTML = '&times;';
-                    deleteButton.addEventListener('click', function () {
-                        imagenDiv.remove();
-                        const updatedDataTransfer = new DataTransfer();
-                        Array.from(dataTransfer.files).forEach((existingFile) => {
-                            if (existingFile !== file) {
-                                updatedDataTransfer.items.add(existingFile);
-                            }
-                        });
-                        dataTransfer = updatedDataTransfer;
-                        imagenesInput.files = dataTransfer.files;
-                    });
-
-                    imagenDiv.appendChild(img);
-                    imagenDiv.appendChild(fileName);
-                    imagenDiv.appendChild(deleteButton);
-                    previewContainer.appendChild(imagenDiv);
-                };
-
-                reader.readAsDataURL(file);
-            });
-
-            imagenesInput.files = dataTransfer.files;
-        });
-
-        const precioInput = document.getElementById('precio');
-        precioInput.addEventListener('blur', function () {
-            let value = this.value.replace(/\D/g, '');
-            value = Math.min(Math.max(value, 0), 100000000);
-            this.value = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0 }).format(value);
-        });
-
-        const backToTopButton = document.getElementById('backToTopButton');
-        backToTopButton.addEventListener('click', function (e) {
+    document.querySelectorAll('.open-modal').forEach(btn => {
+        btn.addEventListener('click', e => {
             e.preventDefault();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-
-        window.addEventListener('scroll', function () {
-            if (window.scrollY > 200) {
-                backToTopButton.classList.remove('hidden');
-            } else {
-                backToTopButton.classList.add('hidden');
-            }
+            modalImage.src = btn.dataset.imageUrl;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         });
     });
+    const closeModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+    closeModalButton.addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+    // ===== Eliminar imagen existente (remover del preview y mantener input) =====
+    document.querySelectorAll('.eliminar-imagen').forEach(button => {
+        button.addEventListener('click', function () {
+            const card = this.closest('[data-imagen-id]');
+            const hidden = card.querySelector('input[name="eliminar_imagenes[]"]');
+            const bucket = document.getElementById('inputs-eliminar');
+            hidden.disabled = false;
+            hidden.value = card.getAttribute('data-imagen-id');
+
+            // Mover el input al bucket para que se envíe aunque removamos la card
+            bucket.appendChild(hidden);
+            // Quitar la tarjeta del DOM para liberar el carrusel
+            card.remove();
+        });
+    });
+
+    // ===== Previews de nuevas imágenes y eliminación antes de enviar =====
+    const imagenesInput = document.getElementById('imagenes');
+    const previewContainer = document.getElementById('preview-imagenes');
+    let dataTransfer = new DataTransfer();
+
+    imagenesInput.addEventListener('change', function () {
+        Array.from(this.files).forEach((file) => {
+            dataTransfer.items.add(file);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const card = document.createElement('div');
+                card.className = 'relative w-32 h-40 border rounded-lg dark:bg-gray-700 dark:border-gray-600 overflow-hidden flex flex-col justify-between items-center p-1 shrink-0 snap-start';
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'object-contain w-full h-24 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer';
+                img.addEventListener('click', () => {
+                    modalImage.src = e.target.result;
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                });
+
+                const fileName = document.createElement('span');
+                fileName.className = 'text-[11px] text-center text-gray-600 dark:text-gray-300 mt-0 truncate w-full';
+                fileName.textContent = file.name;
+
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-800 transition-all duration-300 shadow-lg';
+                del.innerHTML = '&times;';
+                del.addEventListener('click', () => {
+                    card.remove();
+                    const updated = new DataTransfer();
+                    Array.from(dataTransfer.files).forEach(f => { if (f !== file) updated.items.add(f); });
+                    dataTransfer = updated;
+                    imagenesInput.files = dataTransfer.files;
+                });
+
+                card.appendChild(img);
+                card.appendChild(fileName);
+                card.appendChild(del);
+                previewContainer.appendChild(card);
+            };
+            reader.readAsDataURL(file);
+        });
+        imagenesInput.files = dataTransfer.files;
+    });
+
+    // ===== Precio: mostrar con puntos pero enviar limpio =====
+    const precioVisible = document.getElementById('precio_visible');
+    const precioHidden  = document.getElementById('precio');
+
+    const formatear = () => {
+        let v = (precioVisible.value || '').replace(/\D/g, '');
+        if (!v) v = '0';
+        v = Math.min(Math.max(parseInt(v), 0), 100000000);
+        precioVisible.value = new Intl.NumberFormat('es-CO').format(v);
+        precioHidden.value  = String(v);
+    };
+    precioVisible.addEventListener('blur', formatear);
+    precioVisible.addEventListener('input', () => {
+        // evita caracteres no numéricos al escribir
+        precioVisible.value = precioVisible.value.replace(/[^\d.]/g, '');
+    });
+    document.getElementById('formProducto').addEventListener('submit', formatear);
+
+    // Back to top
+    const back = document.getElementById('backToTopButton');
+    back.addEventListener('click', e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 200) back.classList.remove('hidden'); else back.classList.add('hidden');
+    });
+});
 </script>
 
 <style>

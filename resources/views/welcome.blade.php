@@ -39,6 +39,8 @@
 <!-- Importando estilo de animación productos funcionalidad de abrir imagen para evitar redundancia de código -->
 @include('components.modal-imagen')
 
+
+
 <!-- TOAST ÚNICO REUTILIZABLE -->
 <div id="toast-global" class="fixed bottom-5 right-5 text-white p-4 rounded-md shadow-lg opacity-0 transition-opacity duration-300 z-50 flex items-center gap-2"
     style="min-width: 300px;">

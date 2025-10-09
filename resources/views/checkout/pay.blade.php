@@ -47,7 +47,6 @@
                         @php
                             $p = $item->producto ?? null;
 
-                            // ---- helper URL correcto para public/ y storage/ ----
                             $urlify = function ($src) {
                                 if (!$src) return null;
                                 if (str_starts_with($src, 'http://') || str_starts_with($src, 'https://') || str_starts_with($src, 'data:')) return $src;
@@ -56,34 +55,28 @@
                                 try { return \Storage::url($src); } catch (\Throwable $e) { return asset($src); }
                             };
 
-                            // 1) PRIMERO imágenes del carrito (sesión)
                             $imgsRaw = is_array($item->getAttribute('imagenes_sesion') ?? null)
                                 ? $item->getAttribute('imagenes_sesion')
                                 : [];
 
-                            // 2) Relación imagenes de BD
                             if (empty($imgsRaw) && $p && $p->relationLoaded('imagenes')) {
                                 $imgsRaw = $p->imagenes
                                     ->map(fn($im) => $im->url ?? $im->ruta ?? $im->path ?? null)
                                     ->filter()->values()->all();
                             }
 
-                            // 3) Fallback columnas directas
                             if (empty($imgsRaw)) {
                                 $fallbacks = array_filter([$p?->imagen_url ?? null, $p?->imagen ?? null]);
                                 $imgsRaw = array_values(array_unique(array_merge($imgsRaw, $fallbacks)));
                             }
 
-                            // 4) Normaliza
                             $imgs = array_values(array_filter(array_map($urlify, $imgsRaw)));
                             $firstImg = $imgs[0] ?? null;
 
-                            // id único del carrusel para este item
                             $gid = 'gal-'.$loop->index.'-'.($item->id ?? $item->producto_id ?? 'x');
                         @endphp
 
                         <div class="flex items-start sm:items-center gap-4">
-                            {{-- Imagen principal --}}
                             <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden ring-1 ring-zinc-200 dark:ring-zinc-700 bg-zinc-100 dark:bg-zinc-900 shrink-0">
                                 @if($firstImg)
                                     <img id="{{ $gid }}-main" src="{{ $firstImg }}" alt="{{ $p?->nombre ?? 'Producto' }}"
@@ -94,7 +87,6 @@
                                 @endif
                             </div>
 
-                            {{-- Info + carrusel --}}
                             <div class="min-w-0 flex-1">
                                 <p class="font-medium truncate">{{ $p?->nombre ?? 'Producto' }}</p>
                                 <p class="text-sm opacity-70">
@@ -107,12 +99,7 @@
                                         <button type="button" class="gal-btn gal-prev" aria-label="Anterior">‹</button>
                                         <div class="gal-track no-scrollbar" data-track>
                                             @foreach($imgs as $k => $src)
-                                                <img
-                                                    src="{{ $src }}"
-                                                    alt="Imagen {{ $k+1 }}"
-                                                    class="gal-thumb"
-                                                    data-src="{{ $src }}"
-                                                    onerror="this.style.display='none'">
+                                                <img src="{{ $src }}" alt="Imagen {{ $k+1 }}" class="gal-thumb" data-src="{{ $src }}" onerror="this.style.display='none'">
                                             @endforeach
                                         </div>
                                         <button type="button" class="gal-btn gal-next" aria-label="Siguiente">›</button>
@@ -145,9 +132,7 @@
                         <svg class="w-5 h-5 mt-0.5 shrink-0 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2a9.99 9.99 0 1 0 0 20 9.99 9.99 0 0 0 0-20Zm-1 15-4-4 1.41-1.41L11 13.17l5.59-5.59L18 9l-7 8Z"/>
                         </svg>
-                        <p class="text-xs opacity-80">
-                            Pagos seguros a través de ePayco. En modo pruebas no se realiza cargo real.
-                        </p>
+                        <p class="text-xs opacity-80">Pagos seguros a través de ePayco. En modo pruebas no se realiza cargo real.</p>
                     </div>
                 </div>
 
@@ -160,9 +145,7 @@
                         Pagar con ePayco
                     </button>
                     @unless($shippingOK)
-                        <p class="text-[12px] opacity-70 mt-2">
-                            Completa y guarda tus datos de facturación y envío para habilitar el pago.
-                        </p>
+                        <p class="text-[12px] opacity-70 mt-2">Completa y guarda tus datos de facturación y envío para habilitar el pago.</p>
                     @endunless
                 </div>
             </div>
@@ -177,11 +160,11 @@
                 </div>
 
                 @php
-                    $userDefaults = (array) optional(auth()->user())->direccion_predeterminada;
-                    $prefDepto    = data_get($datosEnvio, 'facturacion.departamento', $userDefaults['departamento'] ?? 'Valle del Cauca');
-                    $prefCiudad   = data_get($datosEnvio, 'facturacion.ciudad',       $userDefaults['ciudad'] ?? 'Cali');
-                    $prefDeptoEnv = data_get($datosEnvio, 'envio.departamento',       $userDefaults['departamento'] ?? 'Valle del Cauca');
-                    $prefCiudadEnv= data_get($datosEnvio, 'envio.ciudad',             $userDefaults['ciudad'] ?? 'Cali');
+                    // SIN preselección
+                    $prefDepto     = data_get($datosEnvio, 'facturacion.departamento', '');
+                    $prefCiudad    = data_get($datosEnvio, 'facturacion.ciudad', '');
+                    $prefDeptoEnv  = data_get($datosEnvio, 'envio.departamento', '');
+                    $prefCiudadEnv = data_get($datosEnvio, 'envio.ciudad', '');
                 @endphp
 
                 <form id="form-envio" method="POST" action="{{ route('checkout.pay.save') }}" class="p-5 space-y-6">
@@ -223,7 +206,7 @@
                             <div class="md:col-span-2">
                                 <label class="text-sm opacity-80">Correo electrónico</label>
                                 <input type="email" name="facturacion[email]" value="{{ old('facturacion.email', data_get($datosEnvio,'facturacion.email', auth()->user()->email ?? '')) }}"
-                                       class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900" autocomplete="email">
+                                       class="w-full mt-1 rounded-md border-zinc-300 dark-border-zinc-700 dark:bg-zinc-900" autocomplete="email">
                                 @error('facturacion.email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div class="md:col-span-2">
@@ -238,7 +221,7 @@
                                 <label class="text-sm opacity-80">Departamento *</label>
                                 <select id="fact_departamento" name="facturacion[departamento]"
                                         class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
-                                        required data-pref="{{ $prefDepto }}">
+                                        required data-pref="">
                                     <option value="">Selecciona...</option>
                                 </select>
                                 @error('facturacion.departamento') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -247,7 +230,7 @@
                                 <label class="text-sm opacity-80">Ciudad *</label>
                                 <select id="fact_ciudad" name="facturacion[ciudad]"
                                         class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
-                                        required data-pref="{{ $prefCiudad }}">
+                                        required data-pref="">
                                     <option value="">Selecciona...</option>
                                 </select>
                                 @error('facturacion.ciudad') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -259,10 +242,6 @@
                     <div>
                         <div class="flex items-center justify-between">
                             <h3 class="text-md font-semibold mb-3">Envío</h3>
-                            <label class="text-sm flex items-center gap-2">
-                                <input type="checkbox" id="chk-copy" class="rounded">
-                                Usar datos de facturación
-                            </label>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -290,7 +269,7 @@
                                 <label class="text-sm opacity-80">Departamento *</label>
                                 <select id="envio_departamento" name="envio[departamento]"
                                         class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
-                                        required data-pref="{{ $prefDeptoEnv }}">
+                                        required data-pref="">
                                     <option value="">Selecciona...</option>
                                 </select>
                                 @error('envio.departamento') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -299,7 +278,7 @@
                                 <label class="text-sm opacity-80">Ciudad *</label>
                                 <select id="envio_ciudad" name="envio[ciudad]"
                                         class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
-                                        required data-pref="{{ $prefCiudadEnv }}">
+                                        required data-pref="">
                                     <option value="">Selecciona...</option>
                                 </select>
                                 @error('envio.ciudad') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -341,9 +320,7 @@
         </div>
     </div>
 
-    <p class="text-xs opacity-70 mt-6 mb-24 lg:mb-0">
-        * Si notas algún valor incorrecto, vuelve al carrito y actualiza tu compra.
-    </p>
+    <p class="text-xs opacity-70 mt-6 mb-24 lg:mb-0">* Si notas algún valor incorrecto, vuelve al carrito y actualiza tu compra.</p>
 </div>
 
 {{-- Barra fija inferior (SOLO móvil) --}}
@@ -372,23 +349,12 @@
 <style>
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Carrusel */
 .gal-track{ display:flex; gap:.5rem; overflow-x:auto; scroll-snap-type:x mandatory; padding:0 .75rem; }
 .gal-thumb{ width:2.25rem; height:2.25rem; object-fit:cover; border-radius:.375rem; border:1px solid rgba(113,113,122,.4); scroll-snap-align:center; cursor:pointer; }
 .gal-btn{ position:absolute; top:50%; transform:translateY(-50%); width:1.75rem; height:1.75rem; border-radius:9999px; display:grid; place-items:center; background:rgba(0,0,0,.55); color:#fff; border:none; }
-.gal-prev{ left:0; }
-.gal-next{ right:0; }
-
-/* Toca-gesto más cómodo en móviles */
-@media (max-width: 640px){
-  .gal-thumb{ width:2.5rem; height:2.5rem; }
-}
-
-/* Respaldo: oculta la barra de pago móvil en ≥768px */
-@media (min-width: 768px){
-  .mobile-paybar{ display:none !important; }
-}
+.gal-prev{ left:0; } .gal-next{ right:0; }
+@media (max-width: 640px){ .gal-thumb{ width:2.5rem; height:2.5rem; } }
+@media (min-width: 768px){ .mobile-paybar{ display:none !important; } }
 </style>
 
 <script>
@@ -402,17 +368,17 @@
     });
 
     var data = {
-        name:        "{{ $epayco['name'] }}",
+        name: "{{ $epayco['name'] }}",
         description: "{{ $epayco['description'] }}",
-        invoice:     "{{ $epayco['invoice'] }}",
-        currency:    "{{ $epayco['currency'] }}",
-        amount:      "{{ $epayco['amount'] }}",
+        invoice: "{{ $epayco['invoice'] }}",
+        currency: "{{ $epayco['currency'] }}",
+        amount: "{{ $epayco['amount'] }}",
         tax_base: "0",
         tax: "0",
         country: "CO",
-        response:     "{{ $epayco['response_url'] }}",
+        response: "{{ $epayco['response_url'] }}",
         confirmation: "{{ $epayco['confirm_url'] }}",
-        extra1:       "{{ $epayco['extra1'] }}"
+        extra1: "{{ $epayco['extra1'] }}"
     };
 
     function openEpayco() { handler.open(data); }
@@ -455,7 +421,7 @@
     }
 
     if (btnDesktop) btnDesktop.addEventListener('click', handlePayClick);
-    if (btnMobile)  btnMobile .addEventListener('click', handlePayClick);
+    if (btnMobile)  btnMobile.addEventListener('click', handlePayClick);
 
     // ====== Carruseles por producto ======
     document.querySelectorAll('[data-gallery]').forEach(function (wrap) {
@@ -487,61 +453,71 @@
         window.addEventListener('resize', toggleArrows);
     });
 
-    // ====== Departamento / Ciudad dinámicos ======
-    var GEO_URL = "{{ asset('colombia-geo.json') }}"; // asegúrate que existe en /public
+    // ====== Departamento / Ciudad dinámicos (sin preselección) ======
+    var GEO_URL = "{{ asset('colombia-geo.json') }}";
+
+    function buildGeoMap(geoRaw) {
+        var map = {};
+        var arr = Array.isArray(geoRaw) ? geoRaw : (geoRaw.departamentos || []);
+        arr.forEach(function (d) {
+            if (!d || !d.nombre) return;
+            map[d.nombre] = Array.isArray(d.ciudades) ? d.ciudades.slice() : [];
+        });
+        return map;
+    }
 
     function clearOptions(select) {
-        while (select.options.length > 1) select.remove(1); // deja sólo "Selecciona..."
+        while (select.options.length > 1) select.remove(1);
     }
 
-    function populateDepartamentos(select, geo, pref) {
+    function populateDepartamentos(select, geoMap, pref) {
         clearOptions(select);
-        Object.keys(geo).sort().forEach(function(dep){
+        Object.keys(geoMap).sort().forEach(function(nombre){
             var opt = document.createElement('option');
-            opt.value = dep;
-            opt.textContent = dep;
+            opt.value = nombre;
+            opt.textContent = nombre;
             select.appendChild(opt);
         });
-        // seleccionar preferido si existe
         if (pref) {
+            var prefLower = String(pref).toLowerCase();
             Array.from(select.options).forEach(function(o){
-                if (o.value.toLowerCase() === pref.toLowerCase()) o.selected = true;
+                if (o.value.toLowerCase() === prefLower) o.selected = true;
             });
         }
-        select.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    function populateCiudades(select, geo, departamento, pref) {
+    function populateCiudades(select, geoMap, departamento, pref) {
         clearOptions(select);
-        var cities = geo[departamento] || [];
-        cities.sort().forEach(function(city){
+        var cities = geoMap[departamento] || [];
+        cities.slice().sort().forEach(function(city){
             var opt = document.createElement('option');
             opt.value = city;
             opt.textContent = city;
             select.appendChild(opt);
         });
         if (pref) {
+            var prefLower = String(pref).toLowerCase();
             Array.from(select.options).forEach(function(o){
-                if (o.value.toLowerCase() === pref.toLowerCase()) o.selected = true;
+                if (o.value.toLowerCase() === prefLower) o.selected = true;
             });
         }
     }
 
-    function wireDepCity(depSel, citySel, geo){
+    function wireDepCity(depSel, citySel, geoMap){
         depSel.addEventListener('change', function(){
-            populateCiudades(citySel, geo, depSel.value, citySel.dataset.pref || '');
+            populateCiudades(citySel, geoMap, depSel.value, citySel.dataset.pref || '');
         });
     }
 
-    // Prefs desde blade
+    // Prefs desde blade (VACÍOS)
     var pref = {
         fact: {
-            dep:  document.getElementById('fact_departamento')?.dataset.pref || 'Valle del Cauca',
-            city: document.getElementById('fact_ciudad')?.dataset.pref || 'Cali'
+            dep:  document.getElementById('fact_departamento')?.dataset.pref || '',
+            city: document.getElementById('fact_ciudad')?.dataset.pref || ''
         },
         env: {
-            dep:  document.getElementById('envio_departamento')?.dataset.pref || 'Valle del Cauca',
-            city: document.getElementById('envio_ciudad')?.dataset.pref || 'Cali'
+            dep:  document.getElementById('envio_departamento')?.dataset.pref || '',
+            city: document.getElementById('envio_ciudad')?.dataset.pref || ''
         }
     };
 
@@ -553,34 +529,18 @@
     if (factDep && factCity && envDep && envCity) {
         fetch(GEO_URL, { cache: 'no-store' })
             .then(function(r){ return r.json(); })
-            .then(function(geo){
+            .then(function(geoRaw){
+                var geo = buildGeoMap(geoRaw);
+
                 // Facturación
                 populateDepartamentos(factDep, geo, pref.fact.dep);
                 wireDepCity(factDep, factCity, geo);
-                populateCiudades(factCity, geo, factDep.value || pref.fact.dep, pref.fact.city);
+                if (factDep.value) populateCiudades(factCity, geo, factDep.value, pref.fact.city);
 
                 // Envío
                 populateDepartamentos(envDep, geo, pref.env.dep);
                 wireDepCity(envDep, envCity, geo);
-                populateCiudades(envCity, geo, envDep.value || pref.env.dep, pref.env.city);
-
-                // Copiar datos facturación -> envío
-                var chk = document.getElementById('chk-copy');
-                if (chk) {
-                    chk.addEventListener('change', function(){
-                        if (!this.checked) return;
-                        // Campos de texto
-                        document.getElementById('envio_nombre').value    = document.querySelector('[name="facturacion[nombre]"]').value || '';
-                        document.getElementById('envio_apellidos').value = document.querySelector('[name="facturacion[apellidos]"]').value || '';
-                        document.getElementById('envio_direccion').value = document.querySelector('[name="facturacion[direccion]"]').value || '';
-                        // Selects
-                        envDep.value = factDep.value;
-                        envDep.dispatchEvent(new Event('change', { bubbles:true }));
-                        setTimeout(function(){
-                            envCity.value = factCity.value;
-                        }, 0);
-                    });
-                }
+                if (envDep.value) populateCiudades(envCity, geo, envDep.value, pref.env.city);
             })
             .catch(function(err){
                 console.error('No se pudo cargar colombia-geo.json', err);

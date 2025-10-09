@@ -61,21 +61,38 @@
                         </div>
 
                         {{-- Detalles --}}
-                        <div class="cart-item-details" id="detalle-{{ $id }}">
+                        <div class="cart-item-details flex flex-col gap-2" id="detalle-{{ $id }}">
                             <div class="cart-item-name font-semibold text-gray-900 dark:text-white">{{ $producto['nombre'] }}</div>
                             <div class="cart-item-price text-gray-700 dark:text-gray-300">Precio: ${{ number_format($producto['precio'], 2, ',', '.') }}</div>
-                            <div class="cart-item-quantity text-gray-500 dark:text-gray-400">Cantidad: <span class="cantidad-text">{{ $producto['cantidad'] }}</span></div>
-                            <div class="cart-item-total text-gray-900 dark:text-white font-bold">Total: $<span class="total-individual">{{ number_format($producto['total'], 2, ',', '.') }}</span></div>
+
+                            <div class="cart-item-quantity text-gray-600 dark:text-gray-300 flex items-center gap-3">
+                                <span>Cantidad:</span>
+                                <span class="cantidad-text font-semibold text-gray-900 dark:text-white">{{ $producto['cantidad'] }}</span>
+
+                                {{-- Botón "–" accesible y con alto contraste (modo claro/oscuro) --}}
+                                <button
+                                    class="dec-btn w-9 h-9 rounded-full grid place-items-center border shadow-sm
+                                           bg-gray-200 text-gray-900 border-gray-300 hover:bg-gray-300 active:scale-95
+                                           dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600
+                                           focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                    data-id="{{ $id }}"
+                                    aria-label="Quitar una unidad"
+                                    title="Quitar una unidad">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M5 12h14" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="cart-item-total text-gray-900 dark:text-white font-bold">
+                                Total: $<span class="total-individual">{{ number_format($producto['total'], 2, ',', '.') }}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="cart-item-actions flex flex-col gap-2 items-end">
-                        <form class="quitar-form flex items-center space-x-2" data-id="{{ $id }}">
-                            <input type="number" name="cantidad" min="1" max="{{ $producto['cantidad'] }}" value="1" class="w-16 px-2 py-1 border rounded dark:bg-gray-700 dark:text-white text-center">
-                            <button type="submit" class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 transition">Quitar</button>
-                        </form>
-
-                        <button class="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition duration-200 delete-button" data-id="{{ $id }}">
+                    {{-- Acciones (solo eliminar) --}}
+                    <div class="cart-item-actions flex items-center justify-end mt-4">
+                        <button class="bg-red-500 text-white py-2 px-5 rounded-md hover:bg-red-600 transition duration-200 shadow-sm delete-button" data-id="{{ $id }}">
                             Eliminar
                         </button>
                     </div>
@@ -171,12 +188,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    document.querySelectorAll('.quitar-form').forEach(form => {
-        form.addEventListener('submit', function (event) {
-            event.preventDefault();
+    // ===== Botón "–" para quitar 1 unidad (AJAX) =====
+    document.querySelectorAll('.dec-btn').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
             const productId = this.getAttribute('data-id');
-            const cantidad = parseInt(this.querySelector('input[name="cantidad"]').value);
-            if (!cantidad || cantidad < 1) return;
+            this.disabled = true;
 
             fetch(`/carrito/quitar/${productId}`, {
                 method: 'POST',
@@ -184,24 +201,30 @@ document.addEventListener('DOMContentLoaded', function () {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
-                body: JSON.stringify({ cantidad: cantidad })
+                body: JSON.stringify({ cantidad: 1 }) // siempre quita 1
             })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    if (data.removido) {
-                        document.getElementById(`cart-item-${productId}`)?.remove();
-                    } else {
-                        const card = document.querySelector(`#detalle-${productId}`);
+                this.disabled = false;
+
+                if (!data.success) return;
+
+                if (data.removido) {
+                    document.getElementById(`cart-item-${productId}`)?.remove();
+                } else {
+                    const card = document.querySelector(`#detalle-${productId}`);
+                    if (card) {
                         card.querySelector('.cantidad-text').textContent = data.nueva_cantidad;
                         card.querySelector('.total-individual').textContent = data.total_individual;
                     }
-                    actualizarTotal(data);
-                    updateCartCount(data.cart_count);
-                    showToast('Cantidad actualizada.');
-                    toggleCheckoutUI(data.cart_count);
                 }
-            });
+
+                actualizarTotal(data);
+                updateCartCount(data.cart_count);
+                showToast(data.removido ? 'Producto eliminado del carrito.' : 'Cantidad actualizada.');
+                toggleCheckoutUI(data.cart_count);
+            })
+            .catch(() => { this.disabled = false; });
         });
     });
 

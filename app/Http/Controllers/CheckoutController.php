@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema; // <-- IMPORTANTE
 use App\Models\Orden;
 use App\Models\OrdenDetalle;
 use App\Models\Producto;
@@ -24,7 +25,6 @@ class CheckoutController extends Controller
         foreach ($carrito as $item) {
             $subtotal += ((float) $item['precio']) * ((int) $item['cantidad']);
         }
-        // En la revisión aún no sabemos dirección, pero la regla es global:
         $envio = $this->shippingCost($subtotal);
         $total = $subtotal + $envio;
 
@@ -32,7 +32,7 @@ class CheckoutController extends Controller
     }
 
     /**
-     * 2) Crea/actualiza la orden "pendiente" y redirige a la pantalla de pago (idempotente).
+     * 2) Crea/actualiza la orden "pendiente" (idempotente) y redirige a la pantalla de pago.
      */
     public function create(Request $request)
     {
@@ -55,11 +55,9 @@ class CheckoutController extends Controller
             $subtotal += $precio * $cantidad;
         }
 
-        // Regla de envío
         $envio = $this->shippingCost($subtotal);
         $total = $subtotal + $envio;
 
-        // Idempotencia: si hay una orden pendiente en sesión, la actualizamos.
         $ordenIdSesion = session('orden_pendiente_id');
 
         $orden = DB::transaction(function () use ($ordenIdSesion, $productos, $carrito, $subtotal, $envio, $total) {
@@ -79,7 +77,7 @@ class CheckoutController extends Controller
                         'total'    => $total,
                     ]);
 
-                    // Refresca detalles con la info actual del carrito
+                    // Refresca detalles según carrito actual
                     OrdenDetalle::where('orden_id', $existente->id)->delete();
 
                     foreach ($carrito as $prodId => $item) {
@@ -96,18 +94,19 @@ class CheckoutController extends Controller
                         ]);
                     }
 
-                    return $existente; // ← Reutilizamos la orden existente
+                    return $existente; // reutilizamos la misma orden
                 }
             }
 
-            // No había orden pendiente válida: crear una nueva
+            // Crear nueva orden
             $nueva = Orden::create([
-                'user_id'     => auth()->id(),
-                'estado'      => 'pendiente',
-                'subtotal'    => $subtotal,
-                'envio'       => $envio,
-                'total'       => $total,
-                'datos_envio' => null, // se llenará en /checkout/pay
+                'user_id'       => auth()->id(),
+                'estado'        => 'pendiente',
+                'subtotal'      => $subtotal,
+                'envio'         => $envio,
+                'total'         => $total,
+                'datos_envio'   => null,
+                'intentos_pago' => 0, // inicia contador
             ]);
 
             foreach ($carrito as $prodId => $item) {
@@ -130,14 +129,12 @@ class CheckoutController extends Controller
         // Guarda la orden en sesión para la pantalla de pago
         session(['orden_pendiente_id' => $orden->id]);
 
-        // (No descontamos stock aquí; eso lo hará el Webhook si ePayco aprueba)
         return redirect()->route('checkout.pay')
             ->with('success', "Orden #{$orden->id} lista para pagar.");
     }
 
     /**
-     * 3) Pantalla de pago: muestra la orden y configura el widget de ePayco
-     *    (aquí también mostramos el formulario de dirección y validaciones)
+     * 3) Pantalla de pago: muestra la orden y configura el widget de ePayco.
      */
     public function pay(Request $request)
     {
@@ -146,7 +143,7 @@ class CheckoutController extends Controller
             return redirect()->route('checkout')->with('error', 'No hay una orden pendiente.');
         }
 
-        // Traemos productos con imágenes (por si hay en BD)
+        // Traer orden con productos e imágenes
         $orden = Orden::with(['detalles.producto.imagenes'])->findOrFail($ordenId);
 
         // Adjunta imágenes desde el CARRITO (sesión) como fuente principal
@@ -165,40 +162,41 @@ class CheckoutController extends Controller
             $detalle->setAttribute('imagenes_sesion', $imgsSesion);
         }
 
-        // Datos para la vista (el monto sale SIEMPRE del total de la orden)
+        /**
+         * === Clave para evitar E035 (referencia duplicada) ===
+         * Incrementamos el contador de intentos y generamos un 'invoice' único
+         * por intento. Persistimos en ref_epayco (y ultimo_invoice si existe).
+         */
+        $orden->intentos_pago = (int)($orden->intentos_pago ?? 0) + 1;
+        $invoice = $this->generarInvoiceUnico($orden->id, $orden->intentos_pago);
+        $orden->ref_epayco = $invoice;
+        if (Schema::hasColumn('ordenes', 'ultimo_invoice')) { // <-- CORREGIDO
+            $orden->ultimo_invoice = $invoice;
+        }
+        $orden->save();
+
+        // Datos para el widget (el monto sale del total de la orden)
         $epayco = [
             'public_key'   => config('services.epayco.public_key', env('EPAYCO_PUBLIC_KEY')),
             'test'         => filter_var(env('EPAYCO_TEST', true), FILTER_VALIDATE_BOOLEAN),
             'currency'     => env('EPAYCO_CURRENCY', 'COP'),
             'lang'         => env('EPAYCO_LANG', 'ES'),
-            'response_url' => env('EPAYCO_RESPONSE_URL', config('app.url').'/checkout/response'),
-            'confirm_url'  => env('EPAYCO_CONFIRMATION_URL', config('app.url').'/webhook/epayco'),
-            'invoice'      => 'ORD-'.$orden->id,
+
+            // usa rutas públicas/https (en local puedes usar ngrok)
+            'response_url' => env('EPAYCO_RESPONSE_URL', route('checkout.response')),
+            'confirm_url'  => env('EPAYCO_CONFIRMATION_URL', route('webhook.epayco')),
+
+            'invoice'      => $invoice, // <- ÚNICO por intento
             'amount'       => number_format((float) $orden->total, 2, '.', ''),
             'name'         => 'Compra Asvack #'.$orden->id,
             'description'  => 'Pago de orden #'.$orden->id,
-            'extra1'       => (string) $orden->id, // para que el webhook identifique la orden
+
+            // Para que el webhook identifique la orden sin importar el invoice
+            'extra1'       => (string) $orden->id,
         ];
 
-        // ===== Prefill con dirección predeterminada del usuario =====
+        // Datos de envío/billing ya guardados (no autocompletamos)
         $datosEnvio = (array) ($orden->datos_envio ?? []);
-        $pref = optional(auth()->user())->direccion_predeterminada; // encrypted:array en el modelo User
-
-        if (is_array($pref)) {
-            // Completa ENVÍO si faltan ciudad/departamento/dirección
-            $envioActual = (array) data_get($datosEnvio, 'envio', []);
-            $datosEnvio['envio'] = array_merge($pref, $envioActual);
-
-            // Opcional: también completar FACTURACIÓN si no viene algo
-            $factActual = (array) data_get($datosEnvio, 'facturacion', []);
-            // Solo mezclamos ciudad/departamento si faltan
-            if (empty($factActual['ciudad']) || empty($factActual['departamento'])) {
-                $factPref = array_intersect_key($pref, array_flip(['ciudad', 'departamento', 'direccion']));
-                $datosEnvio['facturacion'] = array_merge($factPref, $factActual);
-            }
-        }
-
-        // Flag: ¿ya está validada la dirección?
         $shippingOK = (bool) data_get($orden->datos_envio ?? [], 'validated', false);
 
         return view('checkout.pay', compact('orden', 'epayco', 'datosEnvio', 'shippingOK'));
@@ -214,7 +212,6 @@ class CheckoutController extends Controller
             return redirect()->route('checkout')->with('error', 'No hay una orden pendiente.');
         }
 
-        // Validación de campos esenciales
         $data = $request->validate([
             // Facturación
             'facturacion.nombre'       => 'required|string|max:120',
@@ -225,7 +222,6 @@ class CheckoutController extends Controller
             'facturacion.direccion'    => 'required|string|max:255',
             'facturacion.ciudad'       => 'required|string|max:120',
             'facturacion.departamento' => 'required|string|max:120',
-
             // Envío
             'envio.nombre'             => 'required|string|max:120',
             'envio.apellidos'          => 'required|string|max:120',
@@ -233,7 +229,6 @@ class CheckoutController extends Controller
             'envio.ciudad'             => 'required|string|max:120',
             'envio.departamento'       => 'required|string|max:120',
             'envio.notas'              => 'nullable|string|max:500',
-
             // Términos
             'acepta_terminos'          => 'accepted',
         ], [
@@ -254,7 +249,6 @@ class CheckoutController extends Controller
         $envio = $this->shippingCost($subtotal);
         $total = $subtotal + $envio;
 
-        // Guardar JSON de datos de envío/billing
         $guardar = [
             'facturacion'     => $data['facturacion'],
             'envio'           => $data['envio'],
@@ -274,15 +268,12 @@ class CheckoutController extends Controller
     }
 
     /**
-     * 4) Página de respuesta (solo informativa; el estado real lo fija el webhook)
-     *    Limpia carrito/sesión si la orden ya quedó pagada.
+     * 4) Página de respuesta (solo informativa; el estado real lo fija el webhook).
      */
     public function response(Request $request)
     {
-        // Datos que envía ePayco al regresar
         $data = $request->all();
 
-        // Intentar encontrar la orden por x_extra1 o por la sesión
         $orden = null;
         if ($request->filled('x_extra1') && ctype_digit((string) $request->input('x_extra1'))) {
             $orden = Orden::with('detalles.producto')->find($request->input('x_extra1'));
@@ -291,12 +282,11 @@ class CheckoutController extends Controller
             $orden = Orden::with('detalles.producto')->find(session('orden_pendiente_id'));
         }
 
-        // Si el webhook ya marcó la orden como pagada, limpiamos carrito y punteros
+        // Si el webhook ya marcó como pagada, limpia sesión/carrito
         if ($orden && $orden->estado === 'pagada') {
             $this->clearCartSession();
         }
 
-        // (No cambiamos estados aquí)
         return view('checkout.response', compact('data', 'orden'));
     }
 
@@ -305,8 +295,8 @@ class CheckoutController extends Controller
      */
     private function shippingCost(float $subtotal): float
     {
-        $umbral = 50000;   // puedes pasarlo a env() si quieres
-        $flat   = 10000.0; // costo fijo si no llega al umbral
+        $umbral = 50000;
+        $flat   = 10000.0;
         return $subtotal >= $umbral ? 0.0 : $flat;
     }
 
@@ -316,5 +306,15 @@ class CheckoutController extends Controller
     private function clearCartSession(): void
     {
         session()->forget(['carrito', 'cart_count', 'orden_pendiente_id']);
+    }
+
+    /**
+     * Genera un invoice único y corto para ePayco (evita #E035).
+     * Formato: ORD-<id>-<yyyymmddHHMMSS>-<n>
+     */
+    private function generarInvoiceUnico(int $orderId, int $intento): string
+    {
+        $stamp = now()->format('YmdHis');
+        return "ORD-{$orderId}-{$stamp}-{$intento}";
     }
 }

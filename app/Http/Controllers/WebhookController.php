@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Orden;
 use App\Models\Producto;
+use App\Models\Envio; // <-- añadido
 
 class WebhookController extends Controller
 {
@@ -65,9 +66,21 @@ class WebhookController extends Controller
                     $p->save();
                 }
 
+                // 5) Actualizar estado de la orden
                 $orden->estado    = 'pagada';
                 $orden->respuesta = 'Aprobada';
                 $orden->save();
+
+                // 6) Crear registro de envío si no existe (queda 'pendiente')
+                if (!$orden->envio) {
+                    Envio::create([
+                        'orden_id'     => $orden->id,
+                        'estado_envio' => 'pendiente',
+                        'tipo_envio'   => 'pagado_cliente',
+                        'fecha_envio'  => now(),
+                        'notas'        => 'Envío pendiente de asignación de transportadora.',
+                    ]);
+                }
             } elseif ($rechazada) {
                 $orden->estado    = 'rechazada';
                 $orden->respuesta = 'Rechazada';

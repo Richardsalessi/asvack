@@ -7,10 +7,9 @@ return [
     | Third Party Services
     |--------------------------------------------------------------------------
     |
-    | This file is for storing the credentials for third party services such
-    | as Mailgun, Postmark, AWS and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
+    | Aquí se almacenan las credenciales para servicios de terceros como
+    | Mailgun, Postmark, AWS y ePayco. Este archivo actúa como un punto
+    | central para configurar y acceder a estos servicios desde tu app.
     |
     */
 
@@ -33,6 +32,27 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | ePayco Payment Gateway
+    |--------------------------------------------------------------------------
+    |
+    | Configuración centralizada para la pasarela de pagos ePayco.
+    | Estas claves se cargan desde el archivo .env para mantener la
+    | seguridad y facilidad de mantenimiento del proyecto.
+    |
+    */
+
+    'epayco' => [
+        'public_key'        => env('EPAYCO_PUBLIC_KEY'),
+        'private_key'       => env('EPAYCO_PRIVATE_KEY'),
+        'p_cust_id_cliente' => env('EPAYCO_P_CUST_ID_CLIENTE'),
+        'p_key'             => env('EPAYCO_P_KEY'),
+        'currency'          => env('EPAYCO_CURRENCY', 'COP'),
+        'lang'              => env('EPAYCO_LANG', 'ES'),
+        'test'              => (bool) env('EPAYCO_TEST', true),
     ],
 
 ];

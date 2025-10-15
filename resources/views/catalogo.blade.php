@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const precio = precioFiltro.value;
 
         try {
-            const res = await fetch(`/api/catalogo/filtrar?categoria=${categoria}&precio=${precio}`);
+            const res = await fetch(`/catalogo/filtrar?categoria=${categoria}&precio=${precio}`);
             const data = await res.json(); // => [{ id, nombre, descripcion, precio, stock, imagenes:[{contenido}, ...] }]
             contenedor.innerHTML = '';
 

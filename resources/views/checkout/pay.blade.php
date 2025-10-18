@@ -116,15 +116,27 @@
                     <div class="border-t border-dashed pt-4 mt-2 border-zinc-200 dark:border-zinc-700">
                         <div class="flex justify-between text-sm mb-2">
                             <span class="opacity-80">Subtotal</span>
-                            <span>${{ number_format($orden->subtotal ?? 0, 0, ',', '.') }}</span>
+                            <span id="resumen-subtotal">${{ number_format($orden->subtotal ?? 0, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between text-sm mb-2">
                             <span class="opacity-80">Envío</span>
-                            <span>${{ number_format($orden->envio ?? 0, 0, ',', '.') }}</span>
+                            <span id="resumen-envio">
+                                @if(!$shippingOK)
+                                    Ingresa tu ciudad para ver el costo
+                                @else
+                                    ${{ number_format($orden->envio ?? 0, 0, ',', '.') }}
+                                @endif
+                            </span>
                         </div>
                         <div class="flex justify-between text-base font-semibold">
                             <span>Total</span>
-                            <span>${{ number_format($orden->total ?? 0, 0, ',', '.') }}</span>
+                            <span id="resumen-total">
+                                @if(!$shippingOK)
+                                    ${{ number_format($orden->subtotal ?? 0, 0, ',', '.') }}
+                                @else
+                                    ${{ number_format($orden->total ?? 0, 0, ',', '.') }}
+                                @endif
+                            </span>
                         </div>
                     </div>
 
@@ -160,7 +172,6 @@
                 </div>
 
                 @php
-                    // SIN preselección
                     $prefDepto     = data_get($datosEnvio, 'facturacion.departamento', '');
                     $prefCiudad    = data_get($datosEnvio, 'facturacion.ciudad', '');
                     $prefDeptoEnv  = data_get($datosEnvio, 'envio.departamento', '');
@@ -221,7 +232,7 @@
                                 <label class="text-sm opacity-80">Departamento *</label>
                                 <select id="fact_departamento" name="facturacion[departamento]"
                                         class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
-                                        required data-pref="">
+                                        required data-pref="{{ $prefDepto }}">
                                     <option value="">Selecciona...</option>
                                 </select>
                                 @error('facturacion.departamento') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -230,7 +241,7 @@
                                 <label class="text-sm opacity-80">Ciudad *</label>
                                 <select id="fact_ciudad" name="facturacion[ciudad]"
                                         class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
-                                        required data-pref="">
+                                        required data-pref="{{ $prefCiudad }}">
                                     <option value="">Selecciona...</option>
                                 </select>
                                 @error('facturacion.ciudad') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -269,7 +280,7 @@
                                 <label class="text-sm opacity-80">Departamento *</label>
                                 <select id="envio_departamento" name="envio[departamento]"
                                         class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
-                                        required data-pref="">
+                                        required data-pref="{{ $prefDeptoEnv }}">
                                     <option value="">Selecciona...</option>
                                 </select>
                                 @error('envio.departamento') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -278,10 +289,21 @@
                                 <label class="text-sm opacity-80">Ciudad *</label>
                                 <select id="envio_ciudad" name="envio[ciudad]"
                                         class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
-                                        required data-pref="">
+                                        required data-pref="{{ $prefCiudadEnv }}">
                                     <option value="">Selecciona...</option>
                                 </select>
                                 @error('envio.ciudad') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+
+                            {{-- BARRIO opcional (no afecta el precio) --}}
+                            <div class="md:col-span-2">
+                                <label class="text-sm opacity-80">Barrio (opcional)</label>
+                                <input type="text" id="envio_barrio" name="envio[barrio]"
+                                       value="{{ old('envio.barrio', data_get($datosEnvio,'envio.barrio')) }}"
+                                       class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
+                                       placeholder="Ej. La Floresta">
+                                @error('envio.barrio') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                                <p class="text-[12px] opacity-70 mt-1">Ingresa tu ciudad para ver el costo de envío en tiempo real.</p>
                             </div>
 
                             <div class="md:col-span-2">
@@ -329,8 +351,12 @@
                 dark:bg-zinc-900/90 dark:border-zinc-700 px-4 py-3 flex items-center gap-3">
         <div class="flex-1">
             <div class="text-xs opacity-70 leading-tight">Total</div>
-            <div class="text-lg font-semibold">
-                ${{ number_format($orden->total ?? 0, 0, ',', '.') }}
+            <div id="mobile-total" class="text-lg font-semibold">
+                @if(!$shippingOK)
+                    ${{ number_format($orden->subtotal ?? 0, 0, ',', '.') }}
+                @else
+                    ${{ number_format($orden->total ?? 0, 0, ',', '.') }}
+                @endif
             </div>
         </div>
         <button type="button" id="btn-epayco-mobile"
@@ -453,8 +479,10 @@
         window.addEventListener('resize', toggleArrows);
     });
 
-    // ====== Departamento / Ciudad dinámicos (sin preselección) ======
-    var GEO_URL = "{{ asset('colombia-geo.json') }}";
+    // ====== Departamento / Ciudad dinámicos ======
+    var GEO_URL   = "{{ asset('colombia-geo.json') }}";
+    var QUOTE_URL = "{{ route('checkout.shipping.quote') }}";
+    var CSRF      = "{{ csrf_token() }}";
 
     function buildGeoMap(geoRaw) {
         var map = {};
@@ -501,6 +529,8 @@
                 if (o.value.toLowerCase() === prefLower) o.selected = true;
             });
         }
+        // Dispara cotización cuando se llena ciudad
+        quoteIfPossible();
     }
 
     function wireDepCity(depSel, citySel, geoMap){
@@ -509,22 +539,12 @@
         });
     }
 
-    // Prefs desde blade (VACÍOS)
-    var pref = {
-        fact: {
-            dep:  document.getElementById('fact_departamento')?.dataset.pref || '',
-            city: document.getElementById('fact_ciudad')?.dataset.pref || ''
-        },
-        env: {
-            dep:  document.getElementById('envio_departamento')?.dataset.pref || '',
-            city: document.getElementById('envio_ciudad')?.dataset.pref || ''
-        }
-    };
-
+    // Prefs desde blade
     var factDep  = document.getElementById('fact_departamento');
     var factCity = document.getElementById('fact_ciudad');
     var envDep   = document.getElementById('envio_departamento');
     var envCity  = document.getElementById('envio_ciudad');
+    var envBarrio= document.getElementById('envio_barrio');
 
     if (factDep && factCity && envDep && envCity) {
         fetch(GEO_URL, { cache: 'no-store' })
@@ -533,19 +553,80 @@
                 var geo = buildGeoMap(geoRaw);
 
                 // Facturación
-                populateDepartamentos(factDep, geo, pref.fact.dep);
+                populateDepartamentos(factDep, geo, factDep.dataset.pref || '');
                 wireDepCity(factDep, factCity, geo);
-                if (factDep.value) populateCiudades(factCity, geo, factDep.value, pref.fact.city);
+                if (factDep.value) populateCiudades(factCity, geo, factDep.value, factCity.dataset.pref || '');
 
                 // Envío
-                populateDepartamentos(envDep, geo, pref.env.dep);
+                populateDepartamentos(envDep, geo, envDep.dataset.pref || '');
                 wireDepCity(envDep, envCity, geo);
-                if (envDep.value) populateCiudades(envCity, geo, envDep.value, pref.env.city);
+                if (envDep.value) populateCiudades(envCity, geo, envDep.value, envCity.dataset.pref || '');
+
+                // Si ya hay ciudad preseleccionada, cotiza al cargar
+                setTimeout(quoteIfPossible, 0);
             })
             .catch(function(err){
                 console.error('No se pudo cargar colombia-geo.json', err);
             });
     }
+
+    // ====== Cotización de envío en vivo ======
+    var lblSubtotal = document.getElementById('resumen-subtotal');
+    var lblEnvio    = document.getElementById('resumen-envio');
+    var lblTotal    = document.getElementById('resumen-total');
+    var lblTotalMob = document.getElementById('mobile-total');
+
+    function formatCOP(n){
+        n = Math.round(Number(n)||0);
+        return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    var debounceTimer = null;
+
+    function quoteIfPossible(){
+        if (!envCity || !envCity.value) {
+            if (lblEnvio) lblEnvio.textContent = 'Ingresa tu ciudad para ver el costo';
+            if (lblTotal && lblSubtotal) lblTotal.textContent = lblSubtotal.textContent;
+            if (lblTotalMob && lblSubtotal) lblTotalMob.textContent = lblSubtotal.textContent;
+            return;
+        }
+
+        var payload = new URLSearchParams();
+        payload.append('ciudad', envCity.value);
+
+        if (lblEnvio) lblEnvio.textContent = 'Calculando...';
+
+        fetch(QUOTE_URL, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': CSRF,
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+            },
+            body: payload.toString()
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(json){
+            if (!json || json.ok !== true) throw new Error('Respuesta inválida');
+            if (lblSubtotal) lblSubtotal.textContent = '$' + formatCOP(json.subtotal);
+            if (lblEnvio)    lblEnvio.textContent    = '$' + formatCOP(json.envio);
+            if (lblTotal)    lblTotal.textContent    = '$' + formatCOP(json.total);
+            if (lblTotalMob) lblTotalMob.textContent = '$' + formatCOP(json.total);
+        })
+        .catch(function(err){
+            console.warn('No se pudo cotizar envío:', err);
+            if (lblEnvio) lblEnvio.textContent = 'No disponible';
+        });
+    }
+
+    function debouncedQuote(){
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(quoteIfPossible, 350);
+    }
+
+    if (envCity)   envCity.addEventListener('change', debouncedQuote);
+    if (envBarrio) envBarrio.addEventListener('input', debouncedQuote); // no afecta, pero puedes dejarlo si luego lo usas
+
 })();
 </script>
 @endsection

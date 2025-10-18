@@ -11,6 +11,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrdenController;
 use App\Http\Controllers\Admin\EnvioController;
 use App\Models\Producto;
+use App\Http\Controllers\Admin\TarifaEnvioController;
 
 /*
 |--------------------------------------------------------------------------
@@ -80,6 +81,18 @@ Route::middleware(['auth', 'can:admin-access'])->group(function () {
         'destroy' => 'admin.productos.destroy',
     ]);
 
+    // Admin para tarifas
+    Route::middleware(['auth', 'can:admin-access'])->group(function () {
+        Route::resource('admin/tarifas-envio', TarifaEnvioController::class)->names([
+            'index'   => 'admin.tarifas.index',
+            'create'  => 'admin.tarifas.create',
+            'store'   => 'admin.tarifas.store',
+            'edit'    => 'admin.tarifas.edit',
+            'update'  => 'admin.tarifas.update',
+            'destroy' => 'admin.tarifas.destroy',
+        ])->except(['show']);
+    });
+
     // Ventas
     Route::get('/admin/ventas', [OrdenController::class, 'admin'])->name('ordenes.admin');
 
@@ -122,6 +135,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/checkout/create', [CheckoutController::class, 'create'])->name('checkout.create');
     Route::get('/checkout/pay', [CheckoutController::class, 'pay'])->name('checkout.pay');
     Route::post('/checkout/pay/save', [CheckoutController::class, 'saveShipping'])->name('checkout.pay.save');
+
+    // NUEVO: cotización de envío en vivo (AJAX)
+    Route::post('/checkout/shipping/quote', [CheckoutController::class, 'quoteShipping'])
+        ->name('checkout.shipping.quote');
 
     // Historial del cliente
     Route::get('/mis-compras', [OrdenController::class, 'index'])->name('ordenes.index');

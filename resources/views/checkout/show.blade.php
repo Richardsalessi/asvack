@@ -87,10 +87,27 @@
         @endforeach
     </div>
 
+    {{-- Totales (envío se calcula luego) --}}
     <div class="flex flex-col items-end gap-1 mb-6">
-        <div class="text-gray-700 dark:text-gray-200">Subtotal: <strong>${{ number_format($subtotal, 0, ',', '.') }}</strong></div>
-        <div class="text-gray-700 dark:text-gray-200">Envío: <strong>${{ number_format($envio, 0, ',', '.') }}</strong></div>
-        <div class="text-lg text-gray-900 dark:text-white">Total: <strong>${{ number_format($total, 0, ',', '.') }}</strong></div>
+        <div class="text-gray-700 dark:text-gray-200">
+            Subtotal: <strong>${{ number_format($subtotal, 0, ',', '.') }}</strong>
+        </div>
+
+        @if(is_null($envio))
+            <div class="text-gray-700 dark:text-gray-200">
+                Envío: <strong class="font-normal opacity-75">Se calculará en el siguiente paso</strong>
+            </div>
+            <div class="text-lg text-gray-900 dark:text-white">
+                Total: <strong>${{ number_format($subtotal, 0, ',', '.') }}</strong>
+            </div>
+        @else
+            <div class="text-gray-700 dark:text-gray-200">
+                Envío: <strong>${{ number_format($envio, 0, ',', '.') }}</strong>
+            </div>
+            <div class="text-lg text-gray-900 dark:text-white">
+                Total: <strong>${{ number_format($total, 0, ',', '.') }}</strong>
+            </div>
+        @endif
     </div>
 
     <div class="flex items-center gap-3">
@@ -112,12 +129,10 @@
 <style>
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
 .gal-track{ display:flex; gap:.5rem; overflow-x:auto; scroll-snap-type:x mandatory; padding:0 .75rem; }
 .gal-thumb{ width:2.25rem; height:2.25rem; object-fit:cover; border-radius:.375rem; border:1px solid rgba(113,113,122,.4); scroll-snap-align:center; cursor:pointer; }
 .gal-btn{ position:absolute; top:50%; transform:translateY(-50%); width:1.75rem; height:1.75rem; border-radius:9999px; display:grid; place-items:center; background:rgba(0,0,0,.55); color:#fff; border:none; }
-.gal-prev{ left:0; }
-.gal-next{ right:0; }
+.gal-prev{ left:0; } .gal-next{ right:0; }
 </style>
 
 {{-- Script del carrusel (sin librerías) --}}
@@ -130,7 +145,6 @@ document.addEventListener('DOMContentLoaded', function () {
         var prev  = wrap.querySelector('.gal-prev');
         var next  = wrap.querySelector('.gal-next');
 
-        // Ocultar flechas si no hay overflow
         var toggleArrows = function () {
             var more = track.scrollWidth > track.clientWidth + 2;
             prev.style.display = more ? 'grid' : 'none';
@@ -138,14 +152,12 @@ document.addEventListener('DOMContentLoaded', function () {
         };
         toggleArrows();
 
-        // Navegación
         var step = 120;
         prev.addEventListener('click', function(){ track.scrollBy({left:-step, behavior:'smooth'}); });
         next.addEventListener('click', function(){ track.scrollBy({left: step, behavior:'smooth'}); });
         track.addEventListener('scroll', toggleArrows);
         window.addEventListener('resize', toggleArrows);
 
-        // Click en thumbs => actualiza imagen principal
         track.querySelectorAll('.gal-thumb').forEach(function (thumb) {
             thumb.addEventListener('click', function () {
                 var src = this.getAttribute('data-src') || this.getAttribute('src');

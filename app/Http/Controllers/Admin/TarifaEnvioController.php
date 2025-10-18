@@ -10,15 +10,19 @@ class TarifaEnvioController extends Controller
 {
     public function index(Request $request)
     {
-        $q = trim((string)$request->input('q', ''));
-        $tarifas = TarifaEnvio::when($q, function($qq) use ($q){
-                $qq->where('ciudad','like',"%{$q}%")
-                   ->orWhere('barrio','like',"%{$q}%");
-            })
-            ->orderBy('ciudad')->orderBy('barrio')
-            ->paginate(20)->withQueryString();
+        $q = trim((string) $request->input('q', ''));
 
-        return view('admin.tarifas.index', compact('tarifas','q'));
+        $tarifas = TarifaEnvio::query()
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where('ciudad', 'like', "%{$q}%");
+            })
+            // Ordena solo por ciudad y, como desempate, por costo
+            ->orderBy('ciudad', 'asc')
+            ->orderBy('costo', 'asc')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.tarifas.index', compact('tarifas', 'q'));
     }
 
     public function create()
@@ -29,16 +33,20 @@ class TarifaEnvioController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'ciudad' => 'required|string|max:120',
-            'barrio' => 'nullable|string|max:120',
-            'costo'  => 'required|integer|min:0',
-            'activo' => 'boolean',
+            'ciudad'          => 'required|string|max:120',
+            // barrio eliminado del esquema: no validar ni recibir
+            'costo'           => 'required|integer|min:0',
+            'activo'          => 'nullable|boolean',
             'tiempo_estimado' => 'nullable|string|max:60',
         ]);
-        $data['activo'] = (bool)($data['activo'] ?? true);
+
+        $data['activo'] = (bool) ($data['activo'] ?? true);
+
         TarifaEnvio::create($data);
 
-        return redirect()->route('admin.tarifas.index')->with('success','Tarifa creada');
+        return redirect()
+            ->route('admin.tarifas.index')
+            ->with('success', 'Tarifa creada');
     }
 
     public function edit(TarifaEnvio $tarifas_envio)
@@ -49,21 +57,26 @@ class TarifaEnvioController extends Controller
     public function update(Request $request, TarifaEnvio $tarifas_envio)
     {
         $data = $request->validate([
-            'ciudad' => 'required|string|max:120',
-            'barrio' => 'nullable|string|max:120',
-            'costo'  => 'required|integer|min:0',
-            'activo' => 'boolean',
+            'ciudad'          => 'required|string|max:120',
+            // barrio eliminado del esquema: no validar ni recibir
+            'costo'           => 'required|integer|min:0',
+            'activo'          => 'nullable|boolean',
             'tiempo_estimado' => 'nullable|string|max:60',
         ]);
-        $data['activo'] = (bool)($data['activo'] ?? true);
+
+        $data['activo'] = (bool) ($data['activo'] ?? true);
+
         $tarifas_envio->update($data);
 
-        return redirect()->route('admin.tarifas.index')->with('success','Tarifa actualizada');
+        return redirect()
+            ->route('admin.tarifas.index')
+            ->with('success', 'Tarifa actualizada');
     }
 
     public function destroy(TarifaEnvio $tarifas_envio)
     {
         $tarifas_envio->delete();
-        return back()->with('success','Tarifa eliminada');
+
+        return back()->with('success', 'Tarifa eliminada');
     }
 }

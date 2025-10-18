@@ -21,21 +21,12 @@
             @if($tarifa->exists) @method('PUT') @endif
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
+                <div class="sm:col-span-2">
                     <label class="mb-1 block text-sm opacity-80">Ciudad</label>
                     <input
                         name="ciudad"
                         value="{{ old('ciudad', $tarifa->ciudad) }}"
                         required
-                        class="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-600"
-                    >
-                </div>
-
-                <div>
-                    <label class="mb-1 block text-sm opacity-80">Barrio (opcional)</label>
-                    <input
-                        name="barrio"
-                        value="{{ old('barrio', $tarifa->barrio) }}"
                         class="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-600"
                     >
                 </div>

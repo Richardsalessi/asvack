@@ -385,6 +385,9 @@
 
 <script>
 (function () {
+    // ====== bandera para no recalcular ni bloquear si ya está guardado ======
+    const SHIPPING_OK = {{ $shippingOK ? 'true' : 'false' }};
+
     // ====== ePayco handler ======
     var handler = ePayco.checkout.configure({
         key: "{{ $epayco['public_key'] }}",
@@ -411,6 +414,8 @@
 
     // ==== Guía cuando el pago está bloqueado ====
     function promptToFillOrSave() {
+        if (SHIPPING_OK) return; // si ya está guardado, no mostramos guía
+
         var form = document.getElementById('form-envio');
         if (!form) return;
 
@@ -529,14 +534,8 @@
                 if (o.value.toLowerCase() === prefLower) o.selected = true;
             });
         }
-        // Dispara cotización cuando se llena ciudad
-        quoteIfPossible();
-    }
-
-    function wireDepCity(depSel, citySel, geoMap){
-        depSel.addEventListener('change', function(){
-            populateCiudades(citySel, geoMap, depSel.value, citySel.dataset.pref || '');
-        });
+        // Dispara cotización cuando se llena ciudad (solo si no está guardado)
+        if (!SHIPPING_OK) quoteIfPossible();
     }
 
     // Prefs desde blade
@@ -562,12 +561,18 @@
                 wireDepCity(envDep, envCity, geo);
                 if (envDep.value) populateCiudades(envCity, geo, envDep.value, envCity.dataset.pref || '');
 
-                // Si ya hay ciudad preseleccionada, cotiza al cargar
-                setTimeout(quoteIfPossible, 0);
+                // Si ya hay ciudad preseleccionada, cotiza al cargar SOLO si no está guardado
+                if (!SHIPPING_OK) setTimeout(quoteIfPossible, 0);
             })
             .catch(function(err){
                 console.error('No se pudo cargar colombia-geo.json', err);
             });
+    }
+
+    function wireDepCity(depSel, citySel, geoMap){
+        depSel.addEventListener('change', function(){
+            populateCiudades(citySel, geoMap, depSel.value, citySel.dataset.pref || '');
+        });
     }
 
     // ====== Cotización de envío en vivo ======
@@ -584,6 +589,9 @@
     var debounceTimer = null;
 
     function quoteIfPossible(){
+        // 🚫 Si ya guardaste los datos de envío, no recalcles ni toques los totales
+        if (SHIPPING_OK) return;
+
         if (!envCity || !envCity.value) {
             if (lblEnvio) lblEnvio.textContent = 'Ingresa tu ciudad para ver el costo';
             if (lblTotal && lblSubtotal) lblTotal.textContent = lblSubtotal.textContent;
@@ -620,12 +628,16 @@
     }
 
     function debouncedQuote(){
+        if (SHIPPING_OK) return; // ⛔ nada que hacer si ya está guardado
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(quoteIfPossible, 350);
     }
 
-    if (envCity)   envCity.addEventListener('change', debouncedQuote);
-    if (envBarrio) envBarrio.addEventListener('input', debouncedQuote); // no afecta, pero puedes dejarlo si luego lo usas
+    // Solo escuchamos cambios si NO está guardado
+    if (!SHIPPING_OK) {
+        if (envCity)   envCity.addEventListener('change', debouncedQuote);
+        if (envBarrio) envBarrio.addEventListener('input', debouncedQuote); // opcional
+    }
 
 })();
 </script>

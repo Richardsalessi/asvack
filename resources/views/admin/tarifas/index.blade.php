@@ -18,7 +18,7 @@
             <input
                 name="q"
                 value="{{ $q }}"
-                placeholder="Buscar ciudad/barrio"
+                placeholder="Buscar ciudad"
                 class="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 placeholder-zinc-400 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-600"
             >
             @if(request('q'))
@@ -30,14 +30,13 @@
         </div>
     </form>
 
-    {{-- Tabla responsive --}}
+    {{-- Tabla --}}
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead class="bg-zinc-50 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300">
                     <tr>
                         <th class="px-4 py-3 text-left font-medium">Ciudad</th>
-                        <th class="px-4 py-3 text-left font-medium">Barrio</th>
                         <th class="px-4 py-3 text-right font-medium">Costo</th>
                         <th class="px-4 py-3 text-left font-medium">ETA</th>
                         <th class="px-4 py-3 text-center font-medium">Activo</th>
@@ -48,7 +47,6 @@
                     @forelse($tarifas as $t)
                         <tr class="hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40 transition">
                             <td class="px-4 py-3">{{ $t->ciudad }}</td>
-                            <td class="px-4 py-3">{{ $t->barrio ?: '—' }}</td>
                             <td class="px-4 py-3 text-right">${{ number_format($t->costo, 0, ',', '.') }}</td>
                             <td class="px-4 py-3">{{ $t->tiempo_estimado ?: '—' }}</td>
                             <td class="px-4 py-3 text-center">
@@ -82,7 +80,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-10 text-center text-zinc-500 dark:text-zinc-400">
+                            <td colspan="5" class="px-4 py-10 text-center text-zinc-500 dark:text-zinc-400">
                                 Sin tarifas
                             </td>
                         </tr>

@@ -22,14 +22,14 @@ class CheckoutController extends Controller
         }
 
         // Subtotal del carrito (precios desde sesión)
-        $subtotal = 0;
+        $subtotal = 0.0;
         foreach ($carrito as $item) {
             $subtotal += ((float) $item['precio']) * ((int) $item['cantidad']);
         }
 
-        // En este paso aún no tenemos dirección → NO fijamos envío
-        $envio = null;      // la vista mostrará "Se calculará en el siguiente paso"
-        $total = $subtotal; // por ahora total = subtotal
+        // Aún no hay dirección → NO fijamos envío
+        $envio = null;      // La vista puede mostrar “Se calculará en el siguiente paso”
+        $total = $subtotal; // Por ahora total = subtotal
 
         return view('checkout.show', compact('carrito', 'subtotal', 'envio', 'total'));
     }
@@ -46,7 +46,7 @@ class CheckoutController extends Controller
         $ids       = array_keys($carrito);
         $productos = Producto::whereIn('id', $ids)->get()->keyBy('id');
 
-        $subtotal = 0;
+        $subtotal = 0.0;
         foreach ($carrito as $prodId => $item) {
             if (!isset($productos[$prodId])) {
                 return back()->with('error', "El producto #{$prodId} ya no está disponible.");
@@ -56,8 +56,8 @@ class CheckoutController extends Controller
             $subtotal += $precio * $cantidad;
         }
 
-        // Fallback de envío (se recalcula cuando el usuario guarde la dirección)
-        $envio = $this->shippingCost($subtotal);
+        // Envío PROVISIONAL = 0 (se recalcula cuando el usuario guarde su ciudad)
+        $envio = 0.0;
         $total = $subtotal + $envio;
 
         $ordenIdSesion = session('orden_pendiente_id');
@@ -175,7 +175,7 @@ class CheckoutController extends Controller
             'currency'     => env('EPAYCO_CURRENCY', 'COP'),
             'lang'         => env('EPAYCO_LANG', 'ES'),
 
-            // URLs robustas (sin depender de nombres de rutas)
+            // URLs robustas
             'response_url' => env('EPAYCO_RESPONSE_URL', url('/checkout/response')),
             'confirm_url'  => env('EPAYCO_CONFIRMATION_URL', url('/api/webhook/epayco')),
 
@@ -183,13 +183,17 @@ class CheckoutController extends Controller
             'amount'       => number_format((float) $orden->total, 2, '.', ''),
             'name'         => 'Compra Asvack #'.$orden->id,
             'description'  => 'Pago de orden #'.$orden->id,
-
-            // Para identificar la orden en el webhook
             'extra1'       => (string) $orden->id,
         ];
 
-        $datosEnvio = (array) ($orden->datos_envio ?? []);
-        $shippingOK = (bool) data_get($orden->datos_envio ?? [], 'validated', false);
+        // Datos de envío ya casteados (array)
+        $datosEnvio = $orden->datos_envio ?? [];
+        if (!is_array($datosEnvio)) {
+            $datosEnvio = json_decode((string) $datosEnvio, true) ?: [];
+        }
+        $shippingOK = method_exists($orden, 'tieneEnvioValidado')
+            ? $orden->tieneEnvioValidado()
+            : (bool) data_get($datosEnvio, 'validated', false);
 
         return view('checkout.pay', compact('orden', 'epayco', 'datosEnvio', 'shippingOK'));
     }
@@ -234,15 +238,15 @@ class CheckoutController extends Controller
             ->where('estado', 'pendiente')
             ->firstOrFail();
 
-        // Recalcular subtotal por seguridad (desde detalles)
-        $subtotal = 0;
+        // Subtotal desde detalles (congelados)
+        $subtotal = 0.0;
         foreach ($orden->detalles as $det) {
             $subtotal += (float) $det->precio_unitario * (int) $det->cantidad;
         }
 
-        // Envío real por CIUDAD (barrio se ignora en el cálculo)
+        // === SOLO CIUDAD ===
         $ciudad = (string) data_get($data, 'envio.ciudad');
-        $envio  = $this->shippingCostByLocation($ciudad, null, $subtotal);
+        $envio  = $this->shippingCostByCity($ciudad);
         $total  = $subtotal + $envio;
 
         $guardar = [
@@ -263,7 +267,7 @@ class CheckoutController extends Controller
         return redirect()->route('checkout.pay')->with('success', 'Datos de envío guardados. ¡Ya puedes pagar!');
     }
 
-    /** 3.2) Cotizar envío en vivo (AJAX, solo CIUDAD) */
+    /** 3.2) Cotizar envío en vivo (AJAX) — SOLO CIUDAD */
     public function quoteShipping(Request $request)
     {
         $ordenId = session('orden_pendiente_id');
@@ -290,21 +294,23 @@ class CheckoutController extends Controller
 
         if (!$ciudad) {
             return response()->json([
-                'ok'      => true,
-                'envio'   => null,
-                'total'   => (int) round($subtotal),
-                'message' => 'Ingresa tu ciudad para ver el costo de envío en tiempo real.',
+                'ok'       => true,
+                'subtotal' => (int) round($subtotal),
+                'envio'    => null,
+                'total'    => (int) round($subtotal),
+                'message'  => 'Ingresa tu ciudad para ver el costo de envío en tiempo real.',
             ]);
         }
 
-        $envio = $this->shippingCostByLocation($ciudad, null, $subtotal);
+        $envio = $this->shippingCostByCity($ciudad);
         $total = $subtotal + $envio;
 
         return response()->json([
-            'ok'      => true,
-            'envio'   => (int) round($envio),
-            'total'   => (int) round($total),
-            'message' => 'Cotización actualizada.',
+            'ok'       => true,
+            'subtotal' => (int) round($subtotal),
+            'envio'    => (int) round($envio),
+            'total'    => (int) round($total),
+            'message'  => 'Cotización actualizada.',
         ]);
     }
 
@@ -365,34 +371,29 @@ class CheckoutController extends Controller
      * Helpers de envío / sesión
      * ========================= */
 
-    /**
-     * Fallback simple cuando aún no hay dirección:
-     * Envío gratis >= 50.000; si no, $10.000
-     */
+    /** Fallback provisional (no se usa para el cálculo final) */
     private function shippingCost(float $subtotal): float
     {
-        return $subtotal >= 50000 ? 0.0 : 10000.0;
+        return 0.0;
     }
 
     /**
-     * Costo por CIUDAD basado en la tabla tarifas_envio.
-     * Si el subtotal supera el umbral de envío gratis → 0.
-     * Ignora barrio (solo ciudad general: barrio NULL).
+     * Costo por CIUDAD únicamente (sin umbral de envío gratis).
+     * - Busca tarifa activa exacta por ciudad.
+     * - Si no existe, usa fallback global $10.000.
      */
-    private function shippingCostByLocation(?string $ciudad, ?string $barrio, float $subtotal): float
+    private function shippingCostByCity(?string $ciudad): float
     {
-        $umbralGratis = 50000.0;
-        if ($subtotal >= $umbralGratis) return 0.0;
-
         $ciudad = $ciudad ? trim($ciudad) : null;
 
         if ($ciudad) {
-            // Solo ciudad genérica (barrio se ignora)
             $t = TarifaEnvio::where('activo', 1)
                 ->where('ciudad', $ciudad)
-                ->whereNull('barrio')
-                ->first();
-            if ($t) return (float) $t->costo;
+                ->first(); // 👈 SIN whereNull('barrio')
+
+            if ($t) {
+                return (float) $t->costo;
+            }
         }
 
         // Fallback global

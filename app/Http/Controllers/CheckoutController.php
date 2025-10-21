@@ -159,7 +159,38 @@ class CheckoutController extends Controller
             $detalle->setAttribute('imagenes_sesion', $imgsSesion);
         }
 
-        // Generar invoice único por intento (evita E035)
+        // ========= Revalidar envío vigente ANTES de generar el invoice =========
+        $datosEnvio = $orden->datos_envio ?? [];
+        if (!is_array($datosEnvio)) {
+            $datosEnvio = json_decode((string) $datosEnvio, true) ?: [];
+        }
+        $shippingOK = method_exists($orden, 'tieneEnvioValidado')
+            ? $orden->tieneEnvioValidado()
+            : (bool) data_get($datosEnvio, 'validated', false);
+
+        if ($shippingOK) {
+            $ciudad = (string) data_get($datosEnvio, 'envio.ciudad', '');
+            if ($ciudad !== '') {
+                $subtotal = 0.0;
+                foreach ($orden->detalles as $d) {
+                    $subtotal += (float) $d->precio_unitario * (int) $d->cantidad;
+                }
+
+                $envioVigente = $this->shippingCostByCity($ciudad);
+                $totalVigente = $subtotal + $envioVigente;
+
+                if ((float)$orden->envio !== (float)$envioVigente || (float)$orden->total !== (float)$totalVigente) {
+                    $orden->update([
+                        'subtotal' => $subtotal,
+                        'envio'    => $envioVigente,
+                        'total'    => $totalVigente,
+                    ]);
+                    session()->flash('success', 'Actualizamos el costo de envío con la tarifa vigente.');
+                }
+            }
+        }
+
+        // Generar invoice único por intento (evita E035) con el TOTAL actualizado
         $orden->intentos_pago = (int)($orden->intentos_pago ?? 0) + 1;
         $invoice              = $this->generarInvoiceUnico($orden->id, $orden->intentos_pago);
         $orden->ref_epayco    = $invoice;
@@ -168,7 +199,7 @@ class CheckoutController extends Controller
         }
         $orden->save();
 
-        // Config ePayco
+        // Config ePayco (monto final desde BD)
         $epayco = [
             'public_key'   => config('services.epayco.public_key', env('EPAYCO_PUBLIC_KEY')),
             'test'         => filter_var(env('EPAYCO_TEST', true), FILTER_VALIDATE_BOOLEAN),
@@ -185,15 +216,6 @@ class CheckoutController extends Controller
             'description'  => 'Pago de orden #'.$orden->id,
             'extra1'       => (string) $orden->id,
         ];
-
-        // Datos de envío ya casteados (array)
-        $datosEnvio = $orden->datos_envio ?? [];
-        if (!is_array($datosEnvio)) {
-            $datosEnvio = json_decode((string) $datosEnvio, true) ?: [];
-        }
-        $shippingOK = method_exists($orden, 'tieneEnvioValidado')
-            ? $orden->tieneEnvioValidado()
-            : (bool) data_get($datosEnvio, 'validated', false);
 
         return view('checkout.pay', compact('orden', 'epayco', 'datosEnvio', 'shippingOK'));
     }
@@ -314,11 +336,19 @@ class CheckoutController extends Controller
         ]);
     }
 
-    /** 4) Página de respuesta robusta */
+    /** 4) Página de respuesta robusta (consulta a ePayco y muestra estado “real”) */
     public function response(Request $request)
     {
         $refPayco = (string) $request->query('ref_payco', '');
         $orden = null;
+        $gateway = [
+            'raw'     => null,
+            'status'  => null,   // APROBADA | RECHAZADA | PENDIENTE | FALLIDA | DESCONOCIDA
+            'message' => null,
+            'amount'  => null,
+            'currency'=> null,
+            'ref'     => $refPayco ?: null,
+        ];
 
         // 1) Busca por ref_epayco o ultimo_invoice
         if ($refPayco !== '') {
@@ -333,20 +363,54 @@ class CheckoutController extends Controller
             $orden = Orden::find((int) $request->input('x_extra1'));
         }
 
-        // 3) Si no, consulta a ePayco (servicio de validación)
-        if (!$orden && $refPayco) {
+        // 3) Consulta a ePayco (servicio de validación)
+        if ($refPayco !== '') {
             try {
-                $resp   = Http::timeout(15)->get("https://secure.epayco.co/validation/v1/reference/{$refPayco}")->json();
-                $extra1 = data_get($resp, 'data.x_extra1');
-                if ($extra1 && ctype_digit((string)$extra1)) {
-                    $orden = Orden::find((int)$extra1);
-                    if ($orden && empty($orden->payload)) {
-                        $orden->payload = data_get($resp, 'data', []);
+                $resp = Http::timeout(15)
+                    ->get("https://secure.epayco.co/validation/v1/reference/{$refPayco}")
+                    ->json();
+
+                $gateway['raw']      = $resp;
+                $gateway['amount']   = (float) str_replace(',', '.', (string) data_get($resp, 'data.x_amount', '0'));
+                $gateway['currency'] = (string) data_get($resp, 'data.x_currency_code', '');
+                $codResp             = (string) data_get($resp, 'data.x_cod_response', '');
+                // 1=Aprobada, 2=Rechazada, 3=Pendiente, 4=Fallida
+                $gateway['status']   = match ($codResp) {
+                    '1' => 'APROBADA',
+                    '2' => 'RECHAZADA',
+                    '3' => 'PENDIENTE',
+                    '4' => 'FALLIDA',
+                    default => 'DESCONOCIDA',
+                };
+                $gateway['message']  = (string) data_get($resp, 'data.x_response_reason_text', '');
+                $gateway['ref']      = $refPayco;
+
+                // Si aún no tenemos orden, intenta por x_extra1
+                if (!$orden) {
+                    $extra1 = data_get($resp, 'data.x_extra1');
+                    if ($extra1 && ctype_digit((string)$extra1)) {
+                        $orden = Orden::find((int)$extra1);
+                    }
+                }
+
+                // Guarda payload crudo si tenemos orden
+                if ($orden && empty($orden->payload)) {
+                    $orden->payload = data_get($resp, 'data', []);
+                    $orden->save();
+                }
+
+                // Si la orden no está "pagada" y el gateway dice APROBADA con monto correcto → marca pagada
+                if ($orden && $orden->estado !== 'pagada' && $gateway['status'] === 'APROBADA') {
+                    $montoOk = abs(((float)$orden->total) - $gateway['amount']) < 0.01;
+                    if ($montoOk) {
+                        $orden->estado = 'pagada';
                         $orden->save();
                     }
                 }
             } catch (\Throwable $e) {
-                // silencio
+                // no romper la vista
+                $gateway['status']  = $gateway['status'] ?: 'DESCONOCIDA';
+                $gateway['message'] = $gateway['message'] ?: 'No se pudo consultar el estado en ePayco.';
             }
         }
 
@@ -360,10 +424,20 @@ class CheckoutController extends Controller
             $this->clearCartSession();
         }
 
+        // Estado que mostraremos en la UI (prioriza lo que diga el gateway)
+        $estadoMostrable = $orden?->estado ?? 'pendiente';
+        if ($gateway['status'] === 'APROBADA') {
+            $estadoMostrable = 'pagada';
+        } elseif (in_array($gateway['status'], ['RECHAZADA', 'FALLIDA'])) {
+            $estadoMostrable = 'rechazada';
+        }
+
         return view('checkout.response', [
-            'ref_payco' => $refPayco,
-            'orden'     => $orden,
-            'data'      => $request->all(),
+            'ref_payco'       => $refPayco,
+            'orden'           => $orden,
+            'gateway'         => $gateway,
+            'estadoMostrable' => $estadoMostrable,
+            'data'            => $request->all(),
         ]);
     }
 

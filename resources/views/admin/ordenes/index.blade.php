@@ -29,34 +29,71 @@
         @endif
     </div>
 
-    {{-- Tarjetas resumen --}}
-    @isset($stats)
+    {{-- ===== Tarjetas: PAGOS (órdenes) ===== --}}
+    @if(isset($statsPedidos))
+    <div class="mb-2 text-xs opacity-70">Pagos (órdenes)</div>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4">
+        <a href="{{ route('ordenes.admin', array_filter(['estado'=>'pendiente','q'=>$q,'estado_envio'=>$estadoEnvio,'desde'=>$desde,'hasta'=>$hasta])) }}"
+           class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition">
             <div class="text-xs opacity-70">Pendientes</div>
-            <div class="text-2xl font-semibold">{{ $stats['pendientes'] ?? 0 }}</div>
-        </div>
-        <div class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4">
+            <div class="text-2xl font-semibold">{{ $statsPedidos['pendientes'] ?? 0 }}</div>
+        </a>
+        <a href="{{ route('ordenes.admin', array_filter(['estado'=>'pagada','q'=>$q,'estado_envio'=>$estadoEnvio,'desde'=>$desde,'hasta'=>$hasta])) }}"
+           class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition">
             <div class="text-xs opacity-70">Pagadas</div>
-            <div class="text-2xl font-semibold">{{ $stats['pagadas'] ?? 0 }}</div>
-        </div>
-        <div class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4">
-            <div class="text-xs opacity-70">En tránsito</div>
-            <div class="text-2xl font-semibold">{{ $stats['en_transito'] ?? 0 }}</div>
-        </div>
-        <div class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4">
-            <div class="text-xs opacity-70">Entregados</div>
-            <div class="text-2xl font-semibold">{{ $stats['entregados'] ?? 0 }}</div>
-        </div>
+            <div class="text-2xl font-semibold">{{ $statsPedidos['pagadas'] ?? 0 }}</div>
+        </a>
+        <a href="{{ route('ordenes.admin', array_filter(['estado'=>'rechazada','q'=>$q,'estado_envio'=>$estadoEnvio,'desde'=>$desde,'hasta'=>$hasta])) }}"
+           class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition">
+            <div class="text-xs opacity-70">Rechazadas</div>
+            <div class="text-2xl font-semibold">{{ $statsPedidos['rechazadas'] ?? 0 }}</div>
+        </a>
+        <a href="{{ route('ordenes.admin', array_filter(['estado'=>'cancelada','q'=>$q,'estado_envio'=>$estadoEnvio,'desde'=>$desde,'hasta'=>$hasta])) }}"
+           class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition">
+            <div class="text-xs opacity-70">Canceladas</div>
+            <div class="text-2xl font-semibold">{{ $statsPedidos['canceladas'] ?? 0 }}</div>
+        </a>
     </div>
-    @endisset
+    @endif
+
+    {{-- ===== Tarjetas: ENVÍOS (logística) ===== --}}
+    @if(isset($statsEnvios))
+    <div class="mb-2 text-xs opacity-70">Envíos (logística)</div>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <a href="{{ route('ordenes.admin', array_filter(['estado_envio'=>'pendiente','q'=>$q,'estado'=>$estado,'desde'=>$desde,'hasta'=>$hasta])) }}"
+           class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition">
+            <div class="text-xs opacity-70">Pendientes</div>
+            <div class="text-2xl font-semibold">{{ $statsEnvios['pendientes'] ?? 0 }}</div>
+        </a>
+        <a href="{{ route('ordenes.admin', array_filter(['estado_envio'=>'en_transito','q'=>$q,'estado'=>$estado,'desde'=>$desde,'hasta'=>$hasta])) }}"
+           class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition">
+            <div class="text-xs opacity-70">En tránsito</div>
+            <div class="text-2xl font-semibold">{{ $statsEnvios['en_transito'] ?? 0 }}</div>
+        </a>
+        <a href="{{ route('ordenes.admin', array_filter(['estado_envio'=>'entregado','q'=>$q,'estado'=>$estado,'desde'=>$desde,'hasta'=>$hasta])) }}"
+           class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition">
+            <div class="text-xs opacity-70">Entregados</div>
+            <div class="text-2xl font-semibold">{{ $statsEnvios['entregados'] ?? 0 }}</div>
+        </a>
+        <a href="{{ route('ordenes.admin', array_filter(['estado_envio'=>'devuelto','q'=>$q,'estado'=>$estado,'desde'=>$desde,'hasta'=>$hasta])) }}"
+           class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition">
+            <div class="text-xs opacity-70">Devueltos</div>
+            <div class="text-2xl font-semibold">{{ $statsEnvios['devueltos'] ?? 0 }}</div>
+        </a>
+        <a href="{{ route('ordenes.admin', array_filter(['estado'=>'pagada','estado_envio'=>null,'q'=>$q,'desde'=>$desde,'hasta'=>$hasta])) }}"
+           class="rounded-xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition"
+           title="Órdenes pagadas que aún no tienen registro en envíos">
+            <div class="text-xs opacity-70">Sin crear envío</div>
+            <div class="text-2xl font-semibold">{{ $statsEnvios['sin_crear'] ?? 0 }}</div>
+        </a>
+    </div>
+    @endif
 
     {{-- Tabla --}}
     <div class="rounded-2xl border bg-white dark:bg-zinc-800 dark:border-zinc-700 border-zinc-200 overflow-hidden">
         <div class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
             <h2 class="text-lg font-semibold">Órdenes recientes</h2>
 
-            {{-- Botones de acciones (ahora aquí) --}}
             <div class="flex items-center gap-2">
                 <button type="button" id="btnOpenFilters"
                         class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-500">
@@ -162,10 +199,8 @@
 {{-- Modal de filtros (GET) centrado --}}
 {{-- ============================= --}}
 <div id="filtersModal" class="fixed inset-0 z-50 hidden">
-    {{-- Fondo --}}
     <div class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
 
-    {{-- Contenedor centrado (padding evita superposición con el navbar) --}}
     <div class="relative h-full w-full flex items-start md:items-center justify-center p-4 md:p-6">
         <div class="w-full max-w-3xl rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-xl">
             <div class="px-5 py-3 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
@@ -226,7 +261,6 @@
     </div>
 </div>
 
-{{-- JS para abrir/cerrar modal (centrado) --}}
 <script>
     const modal   = document.getElementById('filtersModal');
     const openBtn = document.getElementById('btnOpenFilters');
@@ -244,9 +278,7 @@
     openBtn?.addEventListener('click', openModal);
     closeBtn?.addEventListener('click', closeModal);
 
-    // Cerrar al hacer click fuera del panel
     modal?.addEventListener('click', (e) => {
-        // si el click es en el fondo oscuro, cierra
         if (e.target === modal.querySelector('.absolute.inset-0')) closeModal();
     });
 </script>

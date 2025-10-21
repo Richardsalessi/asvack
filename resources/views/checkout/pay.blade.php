@@ -288,7 +288,7 @@
                             <div>
                                 <label class="text-sm opacity-80">Ciudad *</label>
                                 <select id="envio_ciudad" name="envio[ciudad]"
-                                        class="w-full mt-1 rounded-md border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
+                                        class="w-full mt-1 rounded-md border-zinc-300 dark-border-zinc-700 dark:bg-zinc-900"
                                         required data-pref="{{ $prefCiudadEnv }}">
                                     <option value="">Selecciona...</option>
                                 </select>
@@ -396,9 +396,10 @@
         external: "true"
     });
 
+    // Payload base (refrescamos amount/invoice justo antes de abrir)
     var data = {
-        name: "{{ $epayco['name'] }}",
-        description: "{{ $epayco['description'] }}",
+        name: "{{ $epayco['name'] ?? ('Compra #'.$orden->id) }}",
+        description: "{{ $epayco['description'] ?? ('Pago de orden #'.$orden->id) }}",
         invoice: "{{ $epayco['invoice'] }}",
         currency: "{{ $epayco['currency'] }}",
         amount: "{{ $epayco['amount'] }}",
@@ -409,6 +410,28 @@
         confirmation: "{{ $epayco['confirm_url'] }}",
         extra1: "{{ $epayco['extra1'] }}"
     };
+
+    // ---- Helpers para refrescar monto/invoice
+    function textNumberToFloat(str){
+        // "$205.000" -> 205000
+        if (!str) return 0;
+        return parseFloat(String(str)
+            .replace(/[^\d.,]/g,'')   // deja dígitos, coma y punto
+            .replace(/\./g,'')        // quita separadores de miles
+            .replace(',', '.')) || 0; // coma a punto decimal
+    }
+    function getUiTotal(){
+        var el = document.getElementById('resumen-total');
+        if (!el || !el.textContent) return 0;
+        return textNumberToFloat(el.textContent);
+    }
+    function refreshAmountAndInvoice(){
+        // 1) Releer total visible y asignarlo al payload
+        var total = getUiTotal();
+        data.amount = (Number(total).toFixed(2)); // "205000.00"
+        // 2) Invoice único por intento de apertura (evita E035 si reabre)
+        data.invoice = "{{ $epayco['invoice'] }}-r" + Date.now();
+    }
 
     function openEpayco() { handler.open(data); }
 
@@ -448,6 +471,8 @@
             promptToFillOrSave();
             return;
         }
+        // 🔥 justo antes de abrir: refrescamos monto e invoice
+        refreshAmountAndInvoice();
         openEpayco();
     }
 
@@ -638,6 +663,39 @@
         if (envCity)   envCity.addEventListener('change', debouncedQuote);
         if (envBarrio) envBarrio.addEventListener('input', debouncedQuote); // opcional
     }
+
+    // ====== Vigilar cambios de tarifas (polling cada ~25s) ======
+    var VERSION_URL = "{{ route('tarifas.version') }}";
+    var initialVersion = null;
+
+    function fetchVersion() {
+      return fetch(VERSION_URL, { headers: { 'Accept':'application/json' } })
+        .then(r => r.json())
+        .then(j => (j && typeof j.version === 'number') ? j.version : 0)
+        .catch(() => 0);
+    }
+
+    function onTarifasChanged() {
+      if (!SHIPPING_OK) {
+        // si aún no guardó envío: recotiza UI con la ciudad actual
+        debouncedQuote();
+      } else {
+        // si ya guardó envío: recarga para revalidar en servidor y regenerar invoice
+        window.location.reload();
+      }
+    }
+
+    fetchVersion().then(function(v){
+      initialVersion = v;
+      setInterval(function(){
+        fetchVersion().then(function(curr){
+          if (initialVersion !== null && curr > initialVersion) {
+            onTarifasChanged();
+            initialVersion = curr;
+          }
+        });
+      }, 25000);
+    });
 
 })();
 </script>

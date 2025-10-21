@@ -34,15 +34,19 @@ class TarifaEnvioController extends Controller
     {
         $data = $request->validate([
             'ciudad'          => 'required|string|max:120',
-            // barrio eliminado del esquema: no validar ni recibir
             'costo'           => 'required|integer|min:0',
-            'activo'          => 'nullable|boolean',
             'tiempo_estimado' => 'nullable|string|max:60',
+            // el checkbox puede no venir cuando está desmarcado
+            'activo'          => 'sometimes|boolean',
         ]);
 
-        $data['activo'] = (bool) ($data['activo'] ?? true);
+        // 1 si viene marcado; 0 si no viene
+        $data['activo'] = $request->boolean('activo');
 
         TarifaEnvio::create($data);
+
+        // 🔔 subir versión de tarifas
+        cache()->forever('tarifas_version', now()->timestamp);
 
         return redirect()
             ->route('admin.tarifas.index')
@@ -58,15 +62,18 @@ class TarifaEnvioController extends Controller
     {
         $data = $request->validate([
             'ciudad'          => 'required|string|max:120',
-            // barrio eliminado del esquema: no validar ni recibir
             'costo'           => 'required|integer|min:0',
-            'activo'          => 'nullable|boolean',
             'tiempo_estimado' => 'nullable|string|max:60',
+            'activo'          => 'sometimes|boolean',
         ]);
 
-        $data['activo'] = (bool) ($data['activo'] ?? true);
+        // 1 si viene; 0 si no viene
+        $data['activo'] = $request->boolean('activo');
 
         $tarifas_envio->update($data);
+
+        // 🔔 subir versión de tarifas
+        cache()->forever('tarifas_version', now()->timestamp);
 
         return redirect()
             ->route('admin.tarifas.index')
@@ -76,6 +83,9 @@ class TarifaEnvioController extends Controller
     public function destroy(TarifaEnvio $tarifas_envio)
     {
         $tarifas_envio->delete();
+
+        // 🔔 subir versión de tarifas
+        cache()->forever('tarifas_version', now()->timestamp);
 
         return back()->with('success', 'Tarifa eliminada');
     }

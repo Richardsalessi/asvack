@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Carbon;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
@@ -10,8 +11,9 @@ use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrdenController;
 use App\Http\Controllers\Admin\EnvioController;
-use App\Models\Producto;
 use App\Http\Controllers\Admin\TarifaEnvioController;
+use App\Models\Producto;
+use App\Models\TarifaEnvio;
 
 /*
 |--------------------------------------------------------------------------
@@ -148,6 +150,23 @@ Route::middleware('auth')->group(function () {
 // Página de respuesta del checkout (informativa)
 Route::get('/checkout/response', [CheckoutController::class, 'response'])
     ->name('checkout.response');
+
+/*
+|--------------------------------------------------------------------------
+| 🔔 Endpoint público: versión de tarifas
+|--------------------------------------------------------------------------
+| Devuelve un número creciente cada vez que se crean/actualizan/eliminan tarifas.
+| El front lo usa para detectar cambios y recotizar/recargar.
+*/
+Route::get('/api/tarifas/version', function () {
+    $v = cache('tarifas_version');
+    if (!$v) {
+        $max = TarifaEnvio::max('updated_at');
+        $v = $max ? Carbon::parse($max)->timestamp : 0;
+        cache()->forever('tarifas_version', $v);
+    }
+    return response()->json(['version' => (int) $v]);
+})->name('tarifas.version');
 
 // ============================
 // 📦 Auth por defecto de Laravel Breeze/Fortify

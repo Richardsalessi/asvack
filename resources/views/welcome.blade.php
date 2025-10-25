@@ -16,8 +16,21 @@
 
     <!-- Video como banner extendido al ancho total -->
     <div class="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] mb-8">
-        <video autoplay loop muted class="w-full object-cover h-[500px] rounded-md shadow-lg">
-            <source src="{{ asset('videos/Video.mp4') }}" type="video/mp4">
+        <video
+            id="heroVideo"
+            class="w-full object-cover sm:h-[320px] md:h-[420px] lg:h-[500px] rounded-md shadow-lg pointer-events-none select-none"
+            src="{{ asset('videos/Video.mp4') }}"
+            autoplay
+            muted
+            loop
+            playsinline
+            webkit-playsinline
+            preload="auto"
+            disablePictureInPicture
+            controlslist="nodownload noplaybackrate nofullscreen noremoteplayback"
+            oncontextmenu="return false;"
+            tabindex="-1"
+        >
             Tu navegador no soporta la reproducción de videos.
         </video>
     </div>
@@ -28,18 +41,16 @@
         <p class="text-lg text-gray-600 dark:text-gray-300">Descubre una selección de nuestros mejores productos.</p>
     </div>
 
-            <!-- Sección de productos aleatorios -->
-            <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
-                @foreach ($productosAleatorios as $producto)
+    <!-- Sección de productos aleatorios -->
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
+        @foreach ($productosAleatorios as $producto)
             <x-producto-card :producto="$producto" />
         @endforeach
     </div>
 </div>
 
-<!-- Importando estilo de animación productos funcionalidad de abrir imagen para evitar redundancia de código -->
+<!-- Importando estilo de animación productos funcionalidad de abrir imagen -->
 @include('components.modal-imagen')
-
-
 
 <!-- TOAST ÚNICO REUTILIZABLE -->
 <div id="toast-global" class="fixed bottom-5 right-5 text-white p-4 rounded-md shadow-lg opacity-0 transition-opacity duration-300 z-50 flex items-center gap-2"
@@ -50,6 +61,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    // --- BOTÓN SCROLL TOP ---
     const scrollToTopBtn = document.getElementById("scrollToTopBtn");
 
     window.addEventListener("scroll", function () {
@@ -64,15 +76,42 @@ document.addEventListener("DOMContentLoaded", function () {
     scrollToTopBtn.addEventListener("click", function () {
         window.scrollTo({ top: 0, behavior: "smooth" });
     });
+
+    // --- VIDEO PROTEGIDO ---
+    const v = document.getElementById('heroVideo');
+    if (v) {
+        v.removeAttribute('controls');
+        v.controls = false;
+
+        const ensurePlay = () => {
+            if (v.paused) {
+                const p = v.play();
+                if (p && typeof p.then === 'function') {
+                    p.catch(() => {});
+                }
+            }
+        };
+
+        ensurePlay();
+
+        v.addEventListener('pause', ensurePlay);
+        v.addEventListener('loadeddata', ensurePlay);
+
+        // Evitar fullscreen o gestos táctiles
+        v.addEventListener('webkitbeginfullscreen', e => e.preventDefault());
+        v.addEventListener('touchstart', e => e.preventDefault(), {passive:false});
+        v.addEventListener('click', e => e.preventDefault());
+        v.addEventListener('keydown', e => e.preventDefault());
+    }
 });
 </script>
 
 <style>
-/* Asegurar que el botón sea completamente clickeable */
+/* BOTÓN SCROLL */
 #scrollToTopBtn {
     position: fixed;
-    bottom: 80px; /* Distancia desde la parte inferior */
-    right: 25px; /* Distancia desde la derecha */
+    bottom: 80px;
+    right: 25px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -85,11 +124,9 @@ document.addEventListener("DOMContentLoaded", function () {
     cursor: pointer;
     transition: opacity 0.3s ease-in-out, transform 0.2s;
     font-size: 24px;
-    z-index: 1000; /* Asegurar que esté por encima de otros elementos */
-    pointer-events: auto; /* Garantizar que sea clickeable */
+    z-index: 1000;
+    pointer-events: auto;
 }
-
-/* Asegurar que el botón sea totalmente clickeable */
 #scrollToTopBtn::before {
     content: "";
     position: absolute;
@@ -97,50 +134,44 @@ document.addEventListener("DOMContentLoaded", function () {
     height: 100%;
     border-radius: 50%;
 }
-
 #scrollToTopBtn:hover {
     background-color: #3730a3;
     transform: scale(1.1);
 }
-
 #scrollToTopBtn:active {
     transform: scale(0.9);
 }
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
     const forms = document.querySelectorAll('.add-to-cart-form');
 
     forms.forEach(form => {
         form.addEventListener('submit', function (event) {
             event.preventDefault();
 
-            // Verificar si el usuario está autenticado usando una variable de Blade
             let isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
 
             if (!isAuthenticated) {
-                // Redirigir al login si no está autenticado
                 window.location.href = "{{ route('login') }}";
                 return;
             }
 
-            // Si está autenticado, procesar la solicitud normalmente
             const formData = new FormData(form);
             fetch(form.action, {
                 method: 'POST',
                 body: formData,
             })
             .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showToastGlobal('success', 'Producto agregado al carrito.');
-                        updateCartCount(data.cart_count);
-                    } else {
-                        showToastGlobal('error', data.message);
-                    }
-                })
-                
+            .then(data => {
+                if (data.success) {
+                    showToastGlobal('success', 'Producto agregado al carrito.');
+                    updateCartCount(data.cart_count);
+                } else {
+                    showToastGlobal('error', data.message);
+                }
+            })
             .catch(error => {
                 console.error('Error:', error);
             });
@@ -148,70 +179,36 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-        function showToastGlobal(type, message) {
-        const toast = document.getElementById('toast-global');
-        const icon = document.getElementById('toast-icon');
-        const text = document.getElementById('toast-text');
+function showToastGlobal(type, message) {
+    const toast = document.getElementById('toast-global');
+    const icon = document.getElementById('toast-icon');
+    const text = document.getElementById('toast-text');
 
-        if (type === 'success') {
-            toast.classList.remove('bg-red-600');
-            toast.classList.add('bg-green-600');
-            icon.textContent = '✅';
-        } else {
-            toast.classList.remove('bg-green-600');
-            toast.classList.add('bg-red-600');
-            icon.textContent = '⚠️';
-        }
-
-        text.textContent = message;
-
-        toast.classList.remove('opacity-0');
-        toast.classList.add('opacity-100');
-
-        setTimeout(() => {
-            toast.classList.remove('opacity-100');
-            toast.classList.add('opacity-0');
-        }, 3500);
+    if (type === 'success') {
+        toast.classList.remove('bg-red-600');
+        toast.classList.add('bg-green-600');
+        icon.textContent = '✅';
+    } else {
+        toast.classList.remove('bg-green-600');
+        toast.classList.add('bg-red-600');
+        icon.textContent = '⚠️';
     }
 
-    function updateCartCount(count) {
-        const cartCount = document.querySelector('#cart-count');
-        if (cartCount) {
-            cartCount.innerText = count;
-        }
+    text.textContent = message;
+    toast.classList.remove('opacity-0');
+    toast.classList.add('opacity-100');
+
+    setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+    }, 3500);
+}
+
+function updateCartCount(count) {
+    const cartCount = document.querySelector('#cart-count');
+    if (cartCount) {
+        cartCount.innerText = count;
     }
-
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const sliders = document.querySelectorAll('.slider');
-        const modal = document.getElementById('imageModal');
-        const modalImage = document.getElementById('modalImage');
-        const closeModalButton = document.getElementById('closeModal');
-        const modalPrevButton = document.getElementById('modalPrev');
-        const modalNextButton = document.getElementById('modalNext');
-        let currentModalIndex = 0;
-        let currentSliderImages = [];
-        let currentSlider = null;
-        let autoRotateInterval;
-
-        // Update cart count dynamically
-        function updateCartCount(count) {
-            const cartCount = document.querySelector('#cart-count');
-            if (cartCount) {
-                cartCount.innerText = count; // Update the cart count in the navbar
-            }
-        } 
-        // Display toast notification
-        function showToast() {
-            const toast = document.getElementById('toast');
-            toast.classList.remove('opacity-0');
-            toast.classList.add('opacity-100');
-            setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0');
-            }, 3000);
-        }
+}
 </script>
 @endsection

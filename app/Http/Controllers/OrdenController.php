@@ -10,14 +10,15 @@ use Illuminate\Support\Facades\Auth;
 class OrdenController extends Controller
 {
     /**
-     * Historial de compras del cliente autenticado.
+     * Historial de compras del cliente autenticado (solo sus órdenes).
+     * Ruta: GET /mis-compras  -> nombre: ordenes.index
      */
     public function index(Request $request)
     {
         $user = Auth::user();
 
         $query = Orden::with(['detalles.producto', 'envioRegistro'])
-            ->where('user_id', $user->id)
+            ->where('user_id', $user->id) // 👈 solo órdenes del usuario logueado
             ->latest();
 
         // Filtro opcional por estado (pendiente, pagada, rechazada, cancelada, enviada, entregada)
@@ -27,11 +28,15 @@ class OrdenController extends Controller
 
         $ordenes = $query->paginate(10)->withQueryString();
 
-        return view('ordenes.index', compact('ordenes'));
+        // 👇 vistas del cliente
+        return view('mis_compras.index', compact('ordenes'));
     }
 
     /**
-     * Mostrar detalle de una orden específica (cliente dueño o admin).
+     * Mostrar detalle de una orden específica.
+     * - El dueño puede verla.
+     * - Un admin también puede verla (usa la vista admin).
+     * Ruta: GET /mis-compras/{orden} -> nombre: ordenes.show
      */
     public function show(Orden $orden)
     {
@@ -40,17 +45,18 @@ class OrdenController extends Controller
         $user    = Auth::user();
         $esAdmin = $user && $user->can('admin-access');
 
+        // Si NO es admin, solo el dueño puede verla
         if (!$esAdmin && (int) $orden->user_id !== (int) $user->id) {
             abort(403);
         }
 
-        // Usa la vista según rol (admin/cliente)
-        return view($esAdmin ? 'admin.ordenes.show' : 'ordenes.show', compact('orden'));
+        // 👇 Cliente: mis_compras.show | Admin: admin.ordenes.show (intacto)
+        return view($esAdmin ? 'admin.ordenes.show' : 'mis_compras.show', compact('orden'));
     }
 
     /**
      * Vista admin de ventas/pedidos con filtros.
-     * GET /admin/ventas  (middleware: can:admin-access)
+     * Ruta: GET /admin/ventas  (middleware: can:admin-access)
      */
     public function admin(Request $request)
     {
@@ -105,7 +111,7 @@ class OrdenController extends Controller
             'en_transito' => (clone $baseEnvios)->where('estado_envio', 'en_transito')->count(),
             'entregados'  => (clone $baseEnvios)->where('estado_envio', 'entregado')->count(),
             'devueltos'   => (clone $baseEnvios)->where('estado_envio', 'devuelto')->count(),
-            // Pagadas sin registro de envío todavía
+            // Órdenes pagadas sin registro de envío todavía
             'sin_crear'   => (clone $baseOrdenes)
                                 ->where('estado', 'pagada')
                                 ->whereDoesntHave('envioRegistro')
@@ -119,8 +125,8 @@ class OrdenController extends Controller
     }
 
     /**
-     * Dashboard Admin: estadísticas rápidas.
-     * GET /admin/dashboard  (middleware: can:admin-access)
+     * Dashboard Admin: estadísticas rápidas (panel admin).
+     * Ruta: GET /admin/dashboard  (middleware: can:admin-access)
      */
     public function adminDashboard()
     {

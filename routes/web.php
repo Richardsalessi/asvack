@@ -106,9 +106,10 @@ Route::middleware(['auth', 'can:admin-access'])->group(function () {
 });
 
 // ============================
-// 🔐 Registro y login
+// 🔐 Registro y (solo aquí lo que está en web.php)
 // ============================
-Route::middleware('guest')->group(function () {
+// 👉 Añadido `nocache.auth` para evitar caché de Safari en vistas guest
+Route::middleware(['guest', 'nocache.auth'])->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store']);
 });

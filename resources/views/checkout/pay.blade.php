@@ -379,7 +379,33 @@
 .gal-thumb{ width:2.25rem; height:2.25rem; object-fit:cover; border-radius:.375rem; border:1px solid rgba(113,113,122,.4); scroll-snap-align:center; cursor:pointer; }
 .gal-btn{ position:absolute; top:50%; transform:translateY(-50%); width:1.75rem; height:1.75rem; border-radius:9999px; display:grid; place-items:center; background:rgba(0,0,0,.55); color:#fff; border:none; }
 .gal-prev{ left:0; } .gal-next{ right:0; }
+
+/* ==== AJUSTE anti-choque con el botón flotante de “subir” (solo móvil) ==== */
+:root{
+  /* tamaño aproximado del FAB + separación */
+  --fab-size: 64px;           /* diámetro del botón flotante */
+  --fab-gap: 12px;            /* separación respecto a la barra */
+}
+@media (max-width: 767px){
+  /* Respeta el safe-area inferior (iPhone) */
+  .mobile-paybar{ bottom: env(safe-area-inset-bottom, 0); }
+  /* Reserva espacio a la derecha dentro de la barrita
+     para que el FAB no tape el botón "Pagar" */
+  .mobile-paybar > div{
+    padding-right: calc(var(--fab-size) + var(--fab-gap));
+  }
+  /* Un pelín más de fondo por si hay home-indicator */
+  @supports (padding: max(0px)){
+    .mobile-paybar > div{
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0));
+    }
+  }
+}
+
+/* Ajuste leve de thumbs en móviles */
 @media (max-width: 640px){ .gal-thumb{ width:2.5rem; height:2.5rem; } }
+
+/* En desktop ocultamos la barrita móvil */
 @media (min-width: 768px){ .mobile-paybar{ display:none !important; } }
 </style>
 
@@ -411,14 +437,12 @@
         extra1: "{{ $epayco['extra1'] }}"
     };
 
-    // ---- Helpers para refrescar monto/invoice
     function textNumberToFloat(str){
-        // "$205.000" -> 205000
         if (!str) return 0;
         return parseFloat(String(str)
-            .replace(/[^\d.,]/g,'')   // deja dígitos, coma y punto
-            .replace(/\./g,'')        // quita separadores de miles
-            .replace(',', '.')) || 0; // coma a punto decimal
+            .replace(/[^\d.,]/g,'')
+            .replace(/\./g,'')
+            .replace(',', '.')) || 0;
     }
     function getUiTotal(){
         var el = document.getElementById('resumen-total');
@@ -426,18 +450,15 @@
         return textNumberToFloat(el.textContent);
     }
     function refreshAmountAndInvoice(){
-        // 1) Releer total visible y asignarlo al payload
         var total = getUiTotal();
-        data.amount = (Number(total).toFixed(2)); // "205000.00"
-        // 2) Invoice único por intento de apertura (evita E035 si reabre)
+        data.amount = (Number(total).toFixed(2));
         data.invoice = "{{ $epayco['invoice'] }}-r" + Date.now();
     }
 
     function openEpayco() { handler.open(data); }
 
-    // ==== Guía cuando el pago está bloqueado ====
     function promptToFillOrSave() {
-        if (SHIPPING_OK) return; // si ya está guardado, no mostramos guía
+        if (SHIPPING_OK) return;
 
         var form = document.getElementById('form-envio');
         if (!form) return;
@@ -461,7 +482,6 @@
         }
     }
 
-    // Click en los botones de pagar
     var btnDesktop = document.getElementById('btn-epayco');
     var btnMobile  = document.getElementById('btn-epayco-mobile');
 
@@ -471,7 +491,6 @@
             promptToFillOrSave();
             return;
         }
-        // 🔥 justo antes de abrir: refrescamos monto e invoice
         refreshAmountAndInvoice();
         openEpayco();
     }
@@ -559,11 +578,9 @@
                 if (o.value.toLowerCase() === prefLower) o.selected = true;
             });
         }
-        // Dispara cotización cuando se llena ciudad (solo si no está guardado)
         if (!SHIPPING_OK) quoteIfPossible();
     }
 
-    // Prefs desde blade
     var factDep  = document.getElementById('fact_departamento');
     var factCity = document.getElementById('fact_ciudad');
     var envDep   = document.getElementById('envio_departamento');
@@ -576,17 +593,14 @@
             .then(function(geoRaw){
                 var geo = buildGeoMap(geoRaw);
 
-                // Facturación
                 populateDepartamentos(factDep, geo, factDep.dataset.pref || '');
                 wireDepCity(factDep, factCity, geo);
                 if (factDep.value) populateCiudades(factCity, geo, factDep.value, factCity.dataset.pref || '');
 
-                // Envío
                 populateDepartamentos(envDep, geo, envDep.dataset.pref || '');
                 wireDepCity(envDep, envCity, geo);
                 if (envDep.value) populateCiudades(envCity, geo, envDep.value, envCity.dataset.pref || '');
 
-                // Si ya hay ciudad preseleccionada, cotiza al cargar SOLO si no está guardado
                 if (!SHIPPING_OK) setTimeout(quoteIfPossible, 0);
             })
             .catch(function(err){
@@ -614,7 +628,6 @@
     var debounceTimer = null;
 
     function quoteIfPossible(){
-        // 🚫 Si ya guardaste los datos de envío, no recalcles ni toques los totales
         if (SHIPPING_OK) return;
 
         if (!envCity || !envCity.value) {
@@ -653,15 +666,14 @@
     }
 
     function debouncedQuote(){
-        if (SHIPPING_OK) return; // ⛔ nada que hacer si ya está guardado
+        if (SHIPPING_OK) return;
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(quoteIfPossible, 350);
     }
 
-    // Solo escuchamos cambios si NO está guardado
     if (!SHIPPING_OK) {
         if (envCity)   envCity.addEventListener('change', debouncedQuote);
-        if (envBarrio) envBarrio.addEventListener('input', debouncedQuote); // opcional
+        if (envBarrio) envBarrio.addEventListener('input', debouncedQuote);
     }
 
     // ====== Vigilar cambios de tarifas (polling cada ~25s) ======
@@ -677,10 +689,8 @@
 
     function onTarifasChanged() {
       if (!SHIPPING_OK) {
-        // si aún no guardó envío: recotiza UI con la ciudad actual
         debouncedQuote();
       } else {
-        // si ya guardó envío: recarga para revalidar en servidor y regenerar invoice
         window.location.reload();
       }
     }

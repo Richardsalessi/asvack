@@ -18,18 +18,30 @@ class AuthenticatedSessionController extends Controller
 
     public function store(LoginRequest $request): RedirectResponse
     {
+        // Autentica con Fortify/Breeze
         $request->authenticate();
+
+        // Regenera ID de sesión para prevenir fijación de sesión
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home'));
+        // ⬇️ Fuerza un GET limpio (Safari-friendly)
+        return to_route('home', [], 303);
+        // Alternativa:
+        // return redirect()->to(route('home'))->setStatusCode(303);
     }
 
     public function destroy(Request $request): RedirectResponse
     {
+        // Cierra sesión
         Auth::guard('web')->logout();
+
+        // Invalida y regenera token CSRF
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        // ⬇️ También 303 al salir
+        return to_route('home', [], 303);
+        // Alternativa:
+        // return redirect()->to(route('home'))->setStatusCode(303);
     }
 }

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto p-6">
+<div class="container mx-auto max-w-6xl p-4 sm:p-6">
     <h1 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Tu Carrito de Compras</h1>
 
     @if(session()->has('success'))
@@ -19,10 +19,10 @@
     @if(count($carrito) > 0)
         <div class="flex flex-col space-y-4" id="carrito-items">
             @foreach($carrito as $id => $producto)
-                <div class="cart-item flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md" id="cart-item-{{ $id }}">
-                    <div class="flex items-center gap-4">
+                <div class="cart-item flex flex-col md:flex-row md:justify-between md:items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md" id="cart-item-{{ $id }}">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
                         {{-- SOLO MINIATURAS EN CARRUSEL --}}
-                        <div class="w-56" data-thumbs="cart-{{ $id }}">
+                        <div class="w-40 sm:w-48 md:w-56" data-thumbs="cart-{{ $id }}">
                             @php
                                 $imgs = $producto['imagenes'] ?? [];
                                 $thumbCount = max(count($imgs), 1);
@@ -42,13 +42,13 @@
                                             src="{{ $src }}"
                                             data-index="{{ $i }}"
                                             alt="Miniatura {{ $i+1 }} de {{ $producto['nombre'] }}"
-                                            class="thumb-item w-16 h-16 object-cover rounded border border-gray-300 dark:border-gray-700 cursor-pointer shrink-0">
+                                            class="thumb-item w-14 h-14 md:w-16 md:h-16 object-cover rounded border border-gray-300 dark:border-gray-700 cursor-pointer shrink-0">
                                     @empty
                                         <img
                                             src="{{ $producto['imagen'] }}"
                                             data-index="0"
                                             alt="Miniatura de {{ $producto['nombre'] }}"
-                                            class="thumb-item w-16 h-16 object-cover rounded border border-gray-300 dark:border-gray-700 cursor-pointer shrink-0">
+                                            class="thumb-item w-14 h-14 md:w-16 md:h-16 object-cover rounded border border-gray-300 dark:border-gray-700 cursor-pointer shrink-0">
                                     @endforelse
                                 </div>
 
@@ -61,8 +61,8 @@
                         </div>
 
                         {{-- Detalles --}}
-                        <div class="cart-item-details flex flex-col gap-2" id="detalle-{{ $id }}">
-                            <div class="cart-item-name font-semibold text-gray-900 dark:text-white">{{ $producto['nombre'] }}</div>
+                        <div class="cart-item-details flex flex-col gap-2 flex-1" id="detalle-{{ $id }}">
+                            <div class="cart-item-name font-semibold text-gray-900 dark:text-white leading-snug">{{ $producto['nombre'] }}</div>
                             <div class="cart-item-price text-gray-700 dark:text-gray-300">Precio: ${{ number_format($producto['precio'], 2, ',', '.') }}</div>
 
                             <div class="cart-item-quantity text-gray-600 dark:text-gray-300 flex items-center gap-3">
@@ -71,7 +71,7 @@
 
                                 {{-- Botón "–" accesible y con alto contraste (modo claro/oscuro) --}}
                                 <button
-                                    class="dec-btn w-9 h-9 rounded-full grid place-items-center border shadow-sm
+                                    class="dec-btn w-9 h-9 md:w-9 md:h-9 rounded-full grid place-items-center border shadow-sm
                                            bg-gray-200 text-gray-900 border-gray-300 hover:bg-gray-300 active:scale-95
                                            dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600
                                            focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
@@ -91,8 +91,8 @@
                     </div>
 
                     {{-- Acciones (solo eliminar) --}}
-                    <div class="cart-item-actions flex items-center justify-end mt-4">
-                        <button class="bg-red-500 text-white py-2 px-5 rounded-md hover:bg-red-600 transition duration-200 shadow-sm delete-button" data-id="{{ $id }}">
+                    <div class="cart-item-actions flex items-center justify-end md:justify-end mt-2 md:mt-0 w-full md:w-auto">
+                        <button class="w-full sm:w-auto bg-red-500 text-white py-2 px-5 rounded-md hover:bg-red-600 transition duration-200 shadow-sm delete-button" data-id="{{ $id }}">
                             Eliminar
                         </button>
                     </div>
@@ -100,14 +100,16 @@
             @endforeach
         </div>
 
-        <div id="checkout-section" class="mt-6 flex justify-between items-center">
+        <div id="checkout-section" class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div>
                 <strong class="text-xl text-gray-900 dark:text-white">Total:</strong>
                 <span id="checkout-total" class="text-lg text-gray-900 dark:text-white" data-total="{{ $total }}">
                     ${{ number_format($total, 2, ',', '.') }}
                 </span>
             </div>
-            <a id="checkout-btn" href="{{ route('checkout') }}" class="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700 transition duration-300">
+            <a id="checkout-btn"
+               href="{{ route('checkout') }}"
+               class="w-full sm:w-auto md:min-w-[280px] md:max-w-[360px] md:self-center md:ml-auto text-center px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700 transition duration-300">
                 Proceder a la compra
             </a>
         </div>
@@ -121,9 +123,9 @@
 <div id="imageModal" class="fixed inset-0 bg-black/75 items-center justify-center z-50 hidden">
     <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-11/12 max-w-3xl">
     <button id="closeModal" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 grid place-items-center">&times;</button>
-    <img id="modalImage" src="" class="w-full h-[70vh] object-contain p-4">
-    <button id="modalPrev" class="absolute top-1/2 left-4 -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 grid place-items-center hidden">&#8249;</button>
-    <button id="modalNext" class="absolute top-1/2 right-4 -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 grid place-items-center hidden">&#8250;</button>
+    <img id="modalImage" src="" class="w-full h-[60vh] sm:h-[70vh] object-contain p-4">
+    <button id="modalPrev" class="absolute top-1/2 left-2 sm:left-4 -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 grid place-items-center hidden">&#8249;</button>
+    <button id="modalNext" class="absolute top-1/2 right-2 sm:right-4 -translate-y-1/2 bg-gray-700 text-white rounded-full w-8 h-8 grid place-items-center hidden">&#8250;</button>
     </div>
 </div>
 
@@ -140,10 +142,8 @@
 </style>
 
 <script>
+/* Tu JS original tal cual */
 document.addEventListener('DOMContentLoaded', function () {
-    // ======================
-    // Eliminar / Quitar
-    // ======================
     const checkoutSection = document.getElementById('checkout-section')
         || document.getElementById('checkout-total')?.closest('.mt-6')
         || document.getElementById('checkout-total')?.parentElement?.parentElement;
@@ -188,7 +188,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ===== Botón "–" para quitar 1 unidad (AJAX) =====
     document.querySelectorAll('.dec-btn').forEach(btn => {
         btn.addEventListener('click', function (e) {
             e.preventDefault();
@@ -201,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
-                body: JSON.stringify({ cantidad: 1 }) // siempre quita 1
+                body: JSON.stringify({ cantidad: 1 })
             })
             .then(res => res.json())
             .then(data => {
@@ -252,9 +251,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 2000);
     }
 
-    // ======================
-    // Carrusel de miniaturas + Modal
-    // ======================
     const modal = document.getElementById('imageModal');
     const modalImage = document.getElementById('modalImage');
     const btnClose = document.getElementById('closeModal');
@@ -308,7 +304,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
 
-        // 🔹 solo si hay más de 1 thumb activamos flechas
         if (thumbs.length <= 1) {
             btnP && (btnP.style.display = 'none');
             btnN && (btnN.style.display = 'none');

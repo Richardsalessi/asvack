@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Orden;
 use App\Models\OrdenDetalle;
 use App\Models\Producto;
@@ -13,6 +14,34 @@ use App\Models\TarifaEnvio;
 
 class CheckoutController extends Controller
 {
+    /** Resuelve una imagen válida (base64 o URL) para el producto */
+    private function resolveProductoImagen(?Producto $producto): string
+    {
+        if (!$producto) {
+            return asset('storage/placeholder.png');
+        }
+
+        $img = $producto->imagenes()->first();
+        if (!$img) {
+            return asset('storage/placeholder.png');
+        }
+
+        // Si guardas base64 en DB (columna "contenido")
+        if (!empty($img->contenido)) {
+            return 'data:image/jpeg;base64,' . $img->contenido;
+        }
+
+        // Si guardas ruta/archivo (columna "ruta")
+        if (!empty($img->ruta)) {
+            if (str_starts_with($img->ruta, 'public/')) {
+                return Storage::url($img->ruta);
+            }
+            return asset($img->ruta);
+        }
+
+        return asset('storage/placeholder.png');
+    }
+
     /** 1) Resumen previo al pago (no mostramos envío aún) */
     public function show(Request $request)
     {
@@ -21,16 +50,28 @@ class CheckoutController extends Controller
             return redirect()->route('carrito')->with('error', 'Tu carrito está vacío.');
         }
 
-        // Subtotal del carrito (precios desde sesión)
+        // Enriquecer cada item del carrito con la imagen resuelta desde BD
         $subtotal = 0.0;
-        foreach ($carrito as $item) {
-            $subtotal += ((float) $item['precio']) * ((int) $item['cantidad']);
-        }
+        foreach ($carrito as $prodId => &$item) {
+            $producto = Producto::with('imagenes')->find((int) $prodId);
 
-        // Aún no hay dirección → NO fijamos envío
+            // Nombre/Precio de respaldo por si faltan en sesión
+            $item['nombre']  = $item['nombre']  ?? ($producto?->nombre ?? 'Producto');
+            $item['precio']  = (float) ($item['precio'] ?? ($producto?->precio ?? 0));
+            $item['cantidad']= (int)   ($item['cantidad'] ?? 1);
+
+            // 🔑 Imagen (antes venía de sesión; ahora la resolvemos aquí)
+            $item['imagen'] = $this->resolveProductoImagen($producto);
+
+            $subtotal += $item['precio'] * $item['cantidad'];
+        }
+        unset($item);
+
+        // Mantén la interfaz tal cual
         $envio = null;      // La vista puede mostrar “Se calculará en el siguiente paso”
         $total = $subtotal; // Por ahora total = subtotal
 
+        // Pasamos el carrito ya enriquecido con 'imagen'
         return view('checkout.show', compact('carrito', 'subtotal', 'envio', 'total'));
     }
 

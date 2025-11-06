@@ -12,7 +12,7 @@ class CarritoController extends Controller
     // Helpers de imágenes
     // ============================
 
-    /** Devuelve todas las imágenes (base64) para el carrusel del carrito */
+    /** Devuelve todas las imágenes (base64) para el carrusel del carrito (NO se guardan en sesión) */
     private function getImagenesBase64(int $id): array
     {
         $producto = Producto::with('imagenes')->find($id);
@@ -27,10 +27,10 @@ class CarritoController extends Controller
         return count($arr) ? $arr : [asset('storage/placeholder.png')];
     }
 
-    /** Compat: imagen “principal” (no usada en el carrusel, pero útil en otras vistas) */
+    /** Compat: imagen “principal” como respaldo */
     private function getImagenBase64(int $id): string
     {
-        $producto = Producto::find($id);
+        $producto = Producto::with('imagenes')->find($id);
         $imagen = $producto?->imagenes()->first();
         return $imagen && $imagen->contenido
             ? 'data:image/png;base64,' . $imagen->contenido
@@ -82,7 +82,6 @@ class CarritoController extends Controller
             $orden->save();
         }
 
-        // Limpia el puntero para que no se re-use
         session()->forget('orden_pendiente_id');
     }
 
@@ -95,7 +94,7 @@ class CarritoController extends Controller
     {
         $carrito = session()->get('carrito', []);
 
-        // Aseguramos estructura y totales por item
+        // Completar estructura e imágenes (se resuelven aquí, NO en sesión)
         foreach ($carrito as $id => &$producto) {
             if (!isset($producto['imagenes']) || !is_array($producto['imagenes']) || empty($producto['imagenes'])) {
                 $producto['imagenes'] = $this->getImagenesBase64((int) $id);
@@ -109,7 +108,7 @@ class CarritoController extends Controller
 
         $total = array_sum(array_column($carrito, 'total'));
 
-        // Por si el usuario llega aquí después de vaciar (refresco / otra pestaña)
+        // Por si el usuario llega después de vaciar (refresco / otra pestaña)
         if (empty($carrito)) {
             $this->cancelarOrdenPendienteSiCarritoVacio();
         }
@@ -117,7 +116,7 @@ class CarritoController extends Controller
         return view('carrito.index', compact('carrito', 'total'));
     }
 
-    /** Agregar producto al carrito */
+    /** Agregar producto al carrito (AJAX/POST) */
     public function agregar(Request $request, int $id)
     {
         $producto = Producto::with('imagenes')->findOrFail($id);
@@ -135,17 +134,14 @@ class CarritoController extends Controller
             ], 422);
         }
 
-        // Imágenes del carrusel
-        $imagenes = $producto->imagenes->map(
-            fn($img) => 'data:image/jpeg;base64,' . $img->contenido
-        )->values()->all();
-
+        // 🚫 No guardar imágenes ni base64 en sesión (solo datos mínimos)
         $carrito[$id] = [
-            'nombre'    => $producto->nombre,
-            'precio'    => (float) $producto->precio,
-            'cantidad'  => $cantidadTotal,
-            'imagen'    => $imagenes[0] ?? asset('storage/placeholder.png'), // compat
-            'imagenes'  => $imagenes ?: [asset('storage/placeholder.png')],
+            'id'       => $producto->id,
+            'nombre'   => $producto->nombre,
+            'precio'   => (float) $producto->precio,
+            'cantidad' => $cantidadTotal,
+            // Opcional: podrías guardar una RUTA corta, nunca base64
+            // 'imagen_path' => $producto->imagenes()->value('ruta') ?? null,
         ];
 
         session()->put('carrito', $carrito);
@@ -231,3 +227,4 @@ class CarritoController extends Controller
         ]);
     }
 }
+    

@@ -58,7 +58,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // ============================
-// 🛠️ Admin: Categorías y Productos
+// 🛠️ Admin: Categorías, Productos y Tarifas
 // ============================
 Route::middleware(['auth', 'can:admin-access'])->group(function () {
     // Categorías
@@ -83,33 +83,32 @@ Route::middleware(['auth', 'can:admin-access'])->group(function () {
         'destroy' => 'admin.productos.destroy',
     ]);
 
-    // Admin para tarifas
-    Route::middleware(['auth', 'can:admin-access'])->group(function () {
-        Route::resource('admin/tarifas-envio', TarifaEnvioController::class)->names([
-            'index'   => 'admin.tarifas.index',
-            'create'  => 'admin.tarifas.create',
-            'store'   => 'admin.tarifas.store',
-            'edit'    => 'admin.tarifas.edit',
-            'update'  => 'admin.tarifas.update',
-            'destroy' => 'admin.tarifas.destroy',
-        ])->except(['show']);
-    });
+    // Tarifas de envío
+    Route::resource('admin/tarifas-envio', TarifaEnvioController::class)->names([
+        'index'   => 'admin.tarifas.index',
+        'create'  => 'admin.tarifas.create',
+        'store'   => 'admin.tarifas.store',
+        'edit'    => 'admin.tarifas.edit',
+        'update'  => 'admin.tarifas.update',
+        'destroy' => 'admin.tarifas.destroy',
+    ])->except(['show']);
 
     // Ventas
     Route::get('/admin/ventas', [OrdenController::class, 'admin'])->name('ordenes.admin');
 
     // Envíos
     Route::prefix('admin')->group(function () {
-        Route::post('envios/{orden}/configurar', [EnvioController::class, 'configurar'])->name('admin.envios.configurar');
-        Route::post('envios/{orden}/estado', [EnvioController::class, 'cambiarEstado'])->name('admin.envios.estado');
+        Route::post('envios/{orden}/configurar', [EnvioController::class, 'configurar'])
+            ->name('admin.envios.configurar');
+        Route::post('envios/{orden}/estado', [EnvioController::class, 'cambiarEstado'])
+            ->name('admin.envios.estado');
     });
 });
 
 // ============================
-// 🔐 Registro y (solo aquí lo que está en web.php)
+// 🔐 Registro (solo guest)
 // ============================
-// 👉 Añadido `nocache.auth` para evitar caché de Safari en vistas guest
-Route::middleware(['guest', 'nocache.auth'])->group(function () {
+Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store']);
 });
@@ -139,7 +138,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout/pay', [CheckoutController::class, 'pay'])->name('checkout.pay');
     Route::post('/checkout/pay/save', [CheckoutController::class, 'saveShipping'])->name('checkout.pay.save');
 
-    // NUEVO: cotización de envío en vivo (AJAX)
+    // Cotización de envío (AJAX)
     Route::post('/checkout/shipping/quote', [CheckoutController::class, 'quoteShipping'])
         ->name('checkout.shipping.quote');
 
@@ -148,7 +147,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/mis-compras/{orden}', [OrdenController::class, 'show'])->name('ordenes.show');
 });
 
-// Página de respuesta del checkout (informativa)
+// Página de respuesta del checkout
 Route::get('/checkout/response', [CheckoutController::class, 'response'])
     ->name('checkout.response');
 
@@ -172,4 +171,4 @@ Route::get('/api/tarifas/version', function () {
 // ============================
 // 📦 Auth por defecto de Laravel Breeze/Fortify
 // ============================
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

@@ -30,7 +30,14 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            // ✅ Añadimos 'min:8' y dejamos la política por defecto
+            'password' => ['required', 'confirmed', 'min:8', Rules\Password::defaults()],
+        ], [
+            // ✅ Mensajes claros en español
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'password.required' => 'La contraseña es obligatoria.',
+            'email.unique' => 'Este correo ya está registrado.',
         ]);
 
         // Crear usuario
@@ -40,7 +47,7 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // Asignar el rol "cliente" automáticamente
+        // Asignar el rol "cliente" automáticamente (si existe)
         $clienteRole = Role::where('name', 'cliente')->first();
         if ($clienteRole) {
             $user->assignRole($clienteRole);
